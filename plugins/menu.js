@@ -47,7 +47,7 @@ async (conn, mek, m, {
 │ ⚙️ *ᴍᴏᴅᴇ*    : ${config.MODE || 'public'}
 │ ⌨️ *ᴘʀᴇғɪx*  : ${prefix}
 │ 🧬 *ᴠᴇʀsɪᴏɴ* : v2.0.0
-│ 👑 *ᴏᴡɴᴇʀ*   : ${ownerName}
+│ 👑 *ᴏᴡɴᴇʀ*   : Nikila vimoksha
 │
 ╰━━━━━━━━━━━━━━━━━━━━╯
 

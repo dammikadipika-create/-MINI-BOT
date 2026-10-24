@@ -43,11 +43,10 @@ async function searchSongs(query) {
     return [...unique.values()];
 }
 
-// 302 Redirect එක අනුගමනය කරමින් direct audio එක බාගත කරන ශ්‍රිතය
-async function downloadAudioDirectly(videoUrl) {
-    let fullUrl = `${API_URL}?apikey=${API_KEY}&url=${encodeURIComponent(videoUrl)}&quality=128&raw=true`;
+// තෝරාගත් quality අගය සමඟ 302 Redirect එක අනුගමනය කරමින් direct audio එක බාගත කරන ශ්‍රිතය
+async function downloadAudioDirectly(videoUrl, quality) {
+    let fullUrl = `${API_URL}?apikey=${API_KEY}&url=${encodeURIComponent(videoUrl)}&quality=${quality}&raw=true`;
     
-    // redirect: 'follow' මඟින් 302 Redirect ලිපිනයන් ස්වයංක්‍රීයව හඹා යයි
     let response = await fetch(fullUrl, {
         method: 'GET',
         headers: { Accept: 'audio/*, application/octet-stream, */*' },
@@ -55,7 +54,6 @@ async function downloadAudioDirectly(videoUrl) {
         signal: AbortSignal.timeout(TIMEOUT)
     });
 
-    // ඇතැම් node.js version වල automatic redirect නොවුවහොත්, manually 302 හසුකර ගැනීම
     if (response.status === 302 || response.status === 301) {
         const redirectUrl = response.headers.get('location');
         if (redirectUrl) {
@@ -113,18 +111,33 @@ cmd({
     pattern: 'mp3',
     alias: ['song', 'ytaudio', 'ytmp3'],
     react: '🎵',
-    desc: 'Search songs and download MP3 via Sasa Dev API directly',
+    desc: 'Search songs and download MP3 with custom quality (128/320)',
     category: 'download',
     filename: __filename
 }, async (conn, mek, m, { from, args, reply }) => {
-    const query = (args || []).join(' ').trim();
+    let fullInput = (args || []).join(' ').trim();
 
-    if (!query) {
+    if (!fullInput) {
         return reply(
             '🎧 *YouTube MP3 Downloader*\n\n' +
-            'Song එකේ නම සමඟ command එක යොදන්න.\n' +
-            'Example: *.mp3 Shape of You*'
+            'Song එකේ නම සමඟ quality එක ඇතුළත් කරන්න.\n' +
+            'Example: *.mp3 Shape of You | 320*\n' +
+            'Example: *.mp3 Shape of You | 128*'
         );
+    }
+
+    // පරිශීලකයා ලබා දුන් input එකෙන් quality එක වෙන් කර හඳුනා ගැනීම (| ලකුණ මඟින්)
+    let query = fullInput;
+    let quality = '128'; // Default quality එක 128kbps වේ
+
+    if (fullInput.includes('|')) {
+        const parts = fullInput.split('|');
+        query = parts[0].trim();
+        const extractedQuality = parts[1].trim();
+        
+        if (extractedQuality === '320' || extractedQuality === '128') {
+            quality = extractedQuality;
+        }
     }
 
     if (activeDownloads.has(from)) {
@@ -141,7 +154,7 @@ cmd({
             return reply('❌ ඔබ සෙවූ ගීතය සොයාගත නොහැකි විය.');
         }
 
-        const video = results[0]; 
+        const video = results; 
 
         await conn.sendMessage(from, {
             text:
@@ -149,15 +162,15 @@ cmd({
                 `┃ 🔍 Title: ${video.title}\n` +
                 `┃ 👤 Channel: ${video.author}\n` +
                 `┃ 🕒 Duration: ${video.duration}\n` +
+                `┃ 🎧 Quality: ${quality}kbps\n` +
                 '┃ ⏳ Audio එක සකස් කරමින්...\n' +
                 '╰━━━━━━━━━━━━━━━━━━╯\n' +
                 FOOTER
         }, { quoted: mek });
 
-        // Direct 302 Handling බාගත කිරීම් ක්‍රියාවලිය
-        const audio = await downloadAudioDirectly(video.url);
+        // පරිශීලකයා තෝරාගත් quality එක අනුව බාගත කිරීම
+        const audio = await downloadAudioDirectly(video.url, quality);
 
-        // WhatsApp හරහා ගීතය සාර්ථකව යැවීම
         await conn.sendMessage(from, {
             audio,
             mimetype: 'audio/mpeg',

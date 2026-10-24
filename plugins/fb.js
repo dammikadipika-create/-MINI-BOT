@@ -44,8 +44,8 @@ cmd(
       
       // pushname එක Welcome සෙක්ෂන් එකට එකතු කර සකස් කළ විස්තර පත්‍රිකාව
       let detailsText = `👋 HELLOW ${pushname || "User"} ❤️ Welcome to\n`;
-      detailsText += `CYBER X THENULA\n\n`;
-      detailsText += `✅THENUWA X MD✅\n`;
+      detailsText += `ɴɪᴋᴋᴀ x ᴍᴅ •\n\n`;
+      detailsText += `✅NIKKA X MD✅\n`;
       detailsText += `╭───────────────────.★*\n`;
       detailsText += `│  ◦ 📝 *Title :* ${title || "Facebook Video"}\n`;
       detailsText += `│  ◦ 🌐 *Url :* ${q}\n`;

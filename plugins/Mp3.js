@@ -2,7 +2,7 @@ const { cmd } = require('../command');
 const yts = require('yt-search');
 
 const API_KEY = 'Sasa_Dev_Api_79346efacb553ec6ee94f2f6453dec8658ec5e7b';
-const API_URL = 'https://sasa-dev-api.xyz';
+const API_URL = 'https://sasa-dev-api.xyz/api/yt/mp3-dl';
 const MAX_SIZE = 64 * 1024 * 1024;
 const TIMEOUT = 300000;
 const FOOTER = '> ɴɪᴋᴋᴀ x ᴍᴅ • ᴘᴏᴡᴇʀᴇᴅ ʙʏ ɴɪᴋᴋᴀ x ᴍᴅ';
@@ -43,16 +43,29 @@ async function searchSongs(query) {
     return [...unique.values()];
 }
 
-// Sasa API එකෙන් සෘජුවම (raw=true) ලබා දෙන File stream එක බාගත කිරීමේ නව ශ්‍රිතය
+// 302 Redirect එක අනුගමනය කරමින් direct audio එක බාගත කරන ශ්‍රිතය
 async function downloadAudioDirectly(videoUrl) {
-    // raw=true මඟින් JSON වෙනුවට සෘජුවම audio file stream එකක් API එකෙන් ලබා ගනී
-    const fullUrl = `${API_URL}?apikey=${API_KEY}&url=${encodeURIComponent(videoUrl)}&quality=128&raw=true`;
+    let fullUrl = `${API_URL}?apikey=${API_KEY}&url=${encodeURIComponent(videoUrl)}&quality=128&raw=true`;
     
-    const response = await fetch(fullUrl, {
+    // redirect: 'follow' මඟින් 302 Redirect ලිපිනයන් ස්වයංක්‍රීයව හඹා යයි
+    let response = await fetch(fullUrl, {
         method: 'GET',
         headers: { Accept: 'audio/*, application/octet-stream, */*' },
+        redirect: 'follow',
         signal: AbortSignal.timeout(TIMEOUT)
     });
+
+    // ඇතැම් node.js version වල automatic redirect නොවුවහොත්, manually 302 හසුකර ගැනීම
+    if (response.status === 302 || response.status === 301) {
+        const redirectUrl = response.headers.get('location');
+        if (redirectUrl) {
+            response = await fetch(redirectUrl, {
+                method: 'GET',
+                headers: { Accept: 'audio/*, application/octet-stream, */*' },
+                signal: AbortSignal.timeout(TIMEOUT)
+            });
+        }
+    }
 
     if (!response.ok) {
         throw new Error(`Sasa API returned HTTP ${response.status}`);
@@ -60,7 +73,6 @@ async function downloadAudioDirectly(videoUrl) {
 
     const contentType = (response.headers.get('content-type') || '').toLowerCase();
     
-    // API එකෙන් වැරදීමකින් error JSON එකක් ආවොත් එය හසුකර ගනී
     if (contentType.includes('application/json')) {
         const errData = await response.json();
         throw new Error(errData.message || errData.error || 'API Internal Error');
@@ -142,7 +154,7 @@ cmd({
                 FOOTER
         }, { quoted: mek });
 
-        // Sasa Dev API එක හරහා Direct File එක බාගත කිරීම
+        // Direct 302 Handling බාගත කිරීම් ක්‍රියාවලිය
         const audio = await downloadAudioDirectly(video.url);
 
         // WhatsApp හරහා ගීතය සාර්ථකව යැවීම

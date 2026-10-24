@@ -1,4 +1,3 @@
-const { sendPluginButtons } = require('../lib/buttons');
 const { cmd } = require('../command');
 
 cmd({
@@ -41,12 +40,12 @@ async (conn, mek, m, {
         await conn.sendMessage(
             from,
             {
-                image: { url: `https://i.ibb.co/qPDNmSY/5cdec1f68264.jpg` }, // ඔයාගේ Image URL එක මෙතනට දාන්න
+                image: { url: `https://i.ibb.co/67DRMzkf/b5fbf712e8fd.jpg` }, // ඔයාගේ Image URL එක මෙතනට දාන්න
                 caption:
-`👋 HELLOW...*${pushname || 'User'}* ❤️ Welcome to CYBER X THENULA
+`👋 HELLOW...*${pushname || 'User'}* ❤️ Welcome to ɴɪᴋᴋᴀ x ᴍᴅ
 
 
-✅CYBER THENUVA X MD✅
+✅NIKKA X MD✅
 *╭──────────────●●►*
 *┋* 🆔 *JID:* ${jid}
 *╰──────────────●●►*`,

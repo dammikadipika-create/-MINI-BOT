@@ -1,31 +1,12 @@
 const fs = require('fs');
-const path = require('path');
-
-const envPath = path.join(__dirname, 'config.env');
-
-if (fs.existsSync(envPath)) {
-    require('dotenv').config({ path: envPath });
-}
+if (fs.existsSync('config.env')) require('dotenv').config({ path: './config.env' });
 
 function convertToBool(text, fault = 'true') {
-    return String(text ?? fault).toLowerCase() === 'true';
+    return text === fault ? true : false;
 }
-
 module.exports = {
-    SESSION_ID: String(
-        process.env.SESSION_ID ||'THENUVA-XMD=https://mega.nz/file/ZuxEFCpQ#r9Ft93slyrIZ-M4x_uFGY_UBSnDKtUytjPdOS9Bk52M'
-    ).trim(),
-
-    BOT_OWNER: String(
-        process.env.BOT_OWNER || '94703270772'
-    ).replace(/\D/g, ''),
-
-    PREFIX: process.env.PREFIX || '.',
-
-    MODE: process.env.MODE || 'public',
-
-    AUTO_READ: convertToBool(
-        process.env.AUTO_READ,
-        'false'
-    )
+SESSION_ID: process.env.SESSION_ID || "",
+ALIVE_IMG: process.env.ALIVE_IMG || "https://github.com/DANUWA-MD/DANUWA-MD/blob/main/images/DANUWA-MD.png?raw=true",
+ALIVE_MSG: process.env.ALIVE_MSG || "*Hello👋 DANUWA-MD Is Alive Now😍*",
+BOT_OWNER: '94776121326',  // Replace with the owner's phone number
 };

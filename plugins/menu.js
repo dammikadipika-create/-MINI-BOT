@@ -80,33 +80,6 @@ async (conn, mek, m, {
 ╭━━〔 👥 ɢʀᴏᴜᴘ ᴄᴏᴍᴍᴀɴᴅs 〕━━╮
 │
 │ 🗑️ *.remove*
-│ ❌ *.delete*
-│ ➕ *.add*
-│ 👢 *.kick*
-│ 👋 *.setgoodbye <text>*
-│ 🎉 *.setwelcome <text>*
-│ ⬆️ *.promote*
-│ ⬇️ *.demote*
-│ 📢 *.tagall*
-│ 🖼️ *.getpic*
-│ 🔗 *.invite*
-│ 🔄 *.revoke*
-│ 📩 *.joinrequests*
-│ 📋 *.allreq*
-│ 🔇 *.mute*
-│ 🔊 *.unmute*
-│ 🔒 *.lockgc*
-│ 🔓 *.unlockgc*
-│ 🚪 *.leave*
-│ ✏️ *.updatename*
-│ 📝 *.updatedesc*
-│ 🔗 *.join*
-│ 🫥 *.hidetag*
-│ ℹ️ *.ginfo*
-│ ⏳ *.disappear on*
-│ ⏳ *.disappear off*
-│ ⏳ *.disappear 7d / 24h / 90d*
-│ 📩 *.senddm*
 │
 ╰━━━━━━━━━━━━━━━━━━━━╯
 

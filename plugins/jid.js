@@ -1,4 +1,3 @@
-const { sendPluginButtons } = require('../lib/buttons');
 const { cmd } = require('../command');
 
 cmd({
@@ -19,17 +18,20 @@ async (conn, mek, m, {
     try {
         let jid;
 
-        // If message is replied to
+        // Get JID from replied message
         if (quoted) {
-            jid = quoted.sender || quoted.participant || quoted.key?.participant;
+            jid =
+                quoted.sender ||
+                quoted.participant ||
+                quoted.key?.participant;
         }
 
-        // If user is mentioned
+        // Get JID from mentioned user
         if (!jid && mentionedJid && mentionedJid.length > 0) {
             jid = mentionedJid[0];
         }
 
-        // If no reply/mention, use current chat JID
+        // If no reply or mention, use current chat JID
         if (!jid) {
             jid = from;
         }
@@ -38,51 +40,45 @@ async (conn, mek, m, {
             return reply("❌ JID එක හොයාගන්න බැරි වුණා.");
         }
 
+        const caption = `
+╭━━〔 🆔 ɴɪᴋᴋᴀ x ᴍᴅ 〕━━╮
+┃
+┃ 👋 ʜᴇʟʟᴏ ${pushname || "User"} ❤️
+┃
+┃ 🤖 ʙᴏᴛ : ɴɪᴋᴋᴀ x ᴍᴅ
+┃
+┃ 🆔 ᴊɪᴅ ɪɴғᴏ
+┃
+┃ ➤ *JID:* ${jid}
+┃
+╰━━━━━━━━━━━━━━━━╯
+
+> ɴɪᴋᴋᴀ x ᴍᴅ • ᴘᴏᴡᴇʀᴇᴅ ʙʏ ɴɪᴋᴋᴀ x ᴍᴅ🚀
+`;
+
         await conn.sendMessage(
             from,
             {
-                image: { url: `https://i.ibb.co/qPDNmSY/5cdec1f68264.jpg` }, // ඔයාගේ Image URL එක මෙතනට දාන්න
-                caption:
-`👋 HELLOW...*${pushname || 'User'}* ❤️ Welcome to CYBER X THENULA
-
-
-✅CYBER THENUVA X MD✅
-*╭──────────────●●►*
-*┋* 🆔 *JID:* ${jid}
-*╰──────────────●●►*`,
+                image: {
+                    url: "https://i.ibb.co/qPDNmSY/5cdec1f68264.jpg"
+                },
+                caption,
                 contextInfo: {
-
-                    mentionedJid: [
-                        mek.sender || from
-                    ],
-
+                    mentionedJid: mek.sender ? [mek.sender] : [],
                     forwardingScore: 999,
-
                     isForwarded: true,
-
                     forwardedNewsletterMessageInfo: {
-
-                        newsletterJid:
-                            '120363403804248705@newsletter',
-
-                        newsletterName:
-                            'CYBER XMD',
-
+                        newsletterJid: "120363403804248705@newsletter",
+                        newsletterName: "NIKKA X MD",
                         serverMessageId: 143
-
                     }
-
                 }
             },
-            {
-                quoted: mek
-            }
+            { quoted: mek }
         );
 
-        await sendPluginButtons(conn, from, 'jid', mek);
-
     } catch (error) {
-        console.error("JID Plugin Error:", error);
-        return reply("❌ JID ලබාගැනීමේදී error එකක් ආවා.");
+        console.error("NIKKA X MD JID Plugin Error:", error);
+        return reply("❌ JID ලබාගැනීමේදී දෝෂයක් ඇති වුණා. නැවත උත්සාහ කරන්න.");
     }
 });

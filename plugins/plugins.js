@@ -5,7 +5,7 @@ const { cmd, commands } = require('../command');
 const PLUGIN_DIR = __dirname;
 
 const MENU_IMAGE =
-'https://i.ibb.co/LXTMV60v/0bade47afdf9.jpg';
+'https://i.ibb.co/67DRMzkf/b5fbf712e8fd.jpg';
 
 const BOT_NAME = 'ɴɪᴋᴋᴀ x ᴍᴅ';
 

@@ -5,7 +5,7 @@ const { cmd, commands } = require('../command');
 const PLUGIN_DIR = __dirname;
 
 const MENU_IMAGE =
-'https://i.ibb.co/67DRMzkf/b5fbf712e8fd.jpg';
+'https://i.ibb.co/LXTMV60v/0bade47afdf9.jpg';
 
 const BOT_NAME = 'ɴɪᴋᴋᴀ x ᴍᴅ';
 
@@ -50,19 +50,12 @@ pattern: 'menu2',
 alias: ['menulist', 'menulistall'],
 react: '📋',
 desc: 'Show plugins and their registered commands',
-category: 'owner',
+category: 'main',
 filename: __filename
-}, async (conn, mek, m, { from, reply, isOwner }) => {
+}, async (conn, mek, m, { from, reply }) => {
 try {
-if (!isOwner) {
-return reply(
-'❌ *ᴏᴡɴᴇʀ ᴏɴʟʏ ᴄᴏᴍᴍᴀɴᴅ*\n\n' +
-FOOTER
-);
-}
+const files = getPluginFiles(PLUGIN_DIR);
 
-
-    const files = getPluginFiles(PLUGIN_DIR);
 
     const loadedFiles = files.filter(file => {
         try {

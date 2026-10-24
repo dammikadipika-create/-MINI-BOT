@@ -24,10 +24,10 @@ const app = express();
 const port = process.env.PORT || 8000;
 
 const prefix = '.';
-const ownerNumber = ['94772194789'];
+const ownerNumber = ['94703270772'];
 
 // Connection notification recipient
-const notificationNumber = '94772194789';
+const notificationNumber = '94703270772';
 
 const authDir = path.join(__dirname, 'auth_info_baileys');
 const credsPath = path.join(authDir, 'creds.json');

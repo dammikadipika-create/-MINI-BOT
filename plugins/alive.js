@@ -157,29 +157,28 @@ cmd(
             ).toFixed(2);
 
             const aliveText = [
-                '╭━━〔 🤖 ᴛʜᴇɴᴜᴠᴀ x ᴍᴅ 〕━━╮',
-                '',
-                `👋 Hello, *${userName}!* ❤️`,
-                '',
-                '╭─〔 *sᴛᴀᴛᴜs ᴘᴀɴᴇʟ* 〕──●●►',
-                '│',
-                '│ 🟢 *sᴛᴀᴛᴜs*  : ONLINE',
-                `│ ⏳ *ᴜᴘᴛɪᴍᴇ*  : ${uptime}`,
-                `│ 💾 *ʀᴀᴍ*     : ${usedMemory} MB`,
-                `│ 🖥️ *ᴛᴏᴛᴀʟ ʀᴀᴍ* : ${totalMemory} GB`,
-                `│ ⚙️ *ʜᴏsᴛ*     : ${os.hostname()}`,
-                `│ ⌨️ *ᴘʀᴇғɪx*   : ${prefix}`,
-                `│ 🧬 *ᴠᴇʀsɪᴏɴ*  : ${VERSION}`,
-                `│ 👑 *ᴏᴡɴᴇʀ*    : ${OWNER_NAME}`,
-                '│',
-                '╰─────────────────●●►',
-                '',
-                `✨ *${BOT_NAME} is running successfully!*`,
-                '',
-                '🎵 _Preparing a random Sinhala remix..._',
-                '',
-                '> ᴛʜᴇɴᴜᴠᴀ x ᴍᴅ • ᴘᴏᴡᴇʀᴇᴅ ʙʏ Dilshan Ashinsa'
-            ].join('\n');
+    '╭━━〔 ⚡ ɴɪᴋᴋᴀ x ᴍᴅ 〕━━╮',
+    '',
+    `👋 Hello, *${userName}!* ❤️`,
+    '',
+    '╭─〔 *sᴛᴀᴛᴜs ᴘᴀɴᴇʟ* 〕──●●►',
+    '│',
+    `│ ⏳ *ᴜᴘᴛɪᴍᴇ*  : ${uptime}`,
+    `│ 💾 *ʀᴀᴍ*     : ${usedMemory} MB`,
+    `│ 🖥️ *ᴛᴏᴛᴀʟ ʀᴀᴍ* : ${totalMemory} GB`,
+    `│ ⚙️ *ʜᴏsᴛ*     : ${os.hostname()}`,
+    `│ ⌨️ *ᴘʀᴇғɪx*   : ${prefix}`,
+    `│ 🧬 *ᴠᴇʀsɪᴏɴ*  : ${VERSION}`,
+    `│ 👑 *ᴏᴡɴᴇʀ*    : ${OWNER_NAME}`,
+    '│',
+    '╰─────────────────●●►',
+    '',
+    '✨ *ɴɪᴋᴋᴀ x ᴍᴅ ɪs ʀᴜɴɴɪɴɢ sᴜᴄᴄᴇssғᴜʟʟʏ!*',
+    '',
+    '🎵 _Preparing a random Sinhala remix..._',
+    '',
+    '> ɴɪᴋᴋᴀ x ᴍᴅ • ᴘᴏᴡᴇʀᴇᴅ ʙʏ NIKKA x MD'
+].join('\n');
 
             // Send a normal message, with an image if available
             if (ALIVE_IMAGE && /^https?:\/\//i.test(ALIVE_IMAGE)) {

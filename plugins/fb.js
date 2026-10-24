@@ -143,16 +143,15 @@ cmd(
       const downloadUrl = hd || sd;
       const finalQuality = hd ? "HD Quality" : "SD Quality";
 
-      let videoCaption = `╭━━〔 ✅ ᴅᴏᴡɴʟᴏᴀᴅ sᴜᴄᴄᴇss 〕━━➤\n`;
-      videoCaption += `│\n`;
-      videoCaption += `│ 👤 *ᴜsᴇʀ* : ${pushname || "User"}\n`;
-      videoCaption += `│ 🎬 *sᴛᴀᴛᴜs* : sᴜᴄᴄᴇssғᴜʟʟʏ sᴇɴᴛ\n`;
-      videoCaption += `│ 🎞️ *ǫᴜᴀʟɪᴛʏ* : ${finalQuality}\n`;
-      videoCaption += `│\n`;
-      videoCaption += `╰━━━━━━━━━━━━━━━━━━➤\n\n`;
-      videoCaption += `➤ ᴇɴᴊᴏʏ ʏᴏᴜʀ ᴠɪᴅᴇᴏ! ❤️\n\n`;
-      videoCaption += `> ɴɪᴋᴋᴀ x ᴍᴅ • ᴘᴏᴡᴇʀᴇᴅ ʙʏ ɴɪᴋᴋᴀ x ᴍᴅ 🚀`;
-
+      let videoCaption = `╭─〔 ✅ ᴅᴏᴡɴʟᴏᴀᴅ 〕─➤\n`;
+         videoCaption += `│\n`;
+         videoCaption += `│ 👤 *ᴜsᴇʀ* : ${pushname || "User"}\n`;
+         videoCaption += `│ 🎬 *sᴛᴀᴛᴜs* : sᴜᴄᴄᴇss\n`;
+         videoCaption += `│ 🎞️ *ǫᴜᴀʟɪᴛʏ* : ${finalQuality}\n`;
+         videoCaption += `│\n`;
+         videoCaption += `╰──────────➤\n\n`;
+         videoCaption += `➤ ᴇɴᴊᴏʏ ʏᴏᴜʀ ᴠɪᴅᴇᴏ! ❤️\n\n`;
+         videoCaption += `> ɴɪᴋᴋᴀ x ᴍᴅ • ᴘᴏᴡᴇʀᴇᴅ ʙʏ ɴɪᴋᴋᴀ x ᴍᴅ 🚀`;
       // Send video
       await conn.sendMessage(
         targetJid,

@@ -68,7 +68,7 @@ cmd(
           isForwarded: true,
           forwardedNewsletterMessageInfo: {
             newsletterJid: "120363403804248705@newsletter",
-            newsletterName: "CYBER XMD",
+            newsletterName: "NIKKA production X MD",
             serverMessageId: 1
           }
         }
@@ -85,7 +85,7 @@ cmd(
       videoCaption += `│  ◦ 🎞️ *Status :* Successfully Sent\n`;
       videoCaption += `│  ◦ 🖼️ *Quality :* ${finalQuality}\n`;
       videoCaption += `╰───────────────────.★*\n\n`;
-      videoCaption += `> *©⚡ POWERED by CYBER THENUWA* 🚀\n\n\n`;
+      videoCaption += `> ɴɪᴋᴋᴀ x ᴍᴅ • ᴘᴏᴡᴇʀᴇᴅ ʙʏ ɴɪᴋᴋᴀ x ᴍᴅ 🚀\n\n\n`;
 
       // වීඩියෝ එක යවන විට Newsletter එක පෙන්වීම
       await danuwa.sendMessage(
@@ -98,7 +98,7 @@ cmd(
             isForwarded: true,
             forwardedNewsletterMessageInfo: {
               newsletterJid: "120363403804248705@newsletter",
-              newsletterName: "CYBER XMD",
+              newsletterName: "NIKKA production X MD",
               serverMessageId: 1
             }
           }

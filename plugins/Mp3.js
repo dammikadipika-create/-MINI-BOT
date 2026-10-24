@@ -43,15 +43,25 @@ async function searchSongs(query) {
     return [...unique.values()];
 }
 
-// 403 Bypass කිරීම සඳහා User-Agent Headers සහිතව සකස් කළ නව ශ්‍රිතය
-async function getAudioUrlFromApi(videoUrl, quality) {
-    const fullUrl = `${API_URL}?apikey=${API_KEY}&url=${encodeURIComponent(videoUrl)}&quality=${quality}&raw=false`;
+// HTTP 400 දෝෂය මඟහැරීම සඳහා URL එක සහ Parameters නිසි පරිදි සකස් කළ නව ශ්‍රිතය
+async function getAudioUrlFromApi(videoUrl, qualityValue) {
+    // Quality අගය string එකක් ලෙස නොව අංකයක් (number) ලෙස පරිවර්තනය කරයි
+    const parsedQuality = parseInt(qualityValue, 10) || 128;
+    
+    // URLSearchParams මඟින් URL එක කිසිදු ලේඛන දෝෂයකින් තොරව සකස් කරයි (HTTP 400 වැළැක්වීමට)
+    const params = new URLSearchParams({
+        apikey: API_KEY,
+        url: videoUrl,
+        quality: parsedQuality.toString(),
+        raw: 'false'
+    });
+
+    const fullUrl = `${API_URL}?${params.toString()}`;
     
     const response = await fetch(fullUrl, {
         method: 'GET',
         headers: { 
             'Accept': 'application/json',
-            // 403 Forbidden දෝෂය මඟහරවා ගැනීමට Browser එකක් ලෙස පෙනී සිටීම
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
         },
         redirect: 'follow',
@@ -59,14 +69,19 @@ async function getAudioUrlFromApi(videoUrl, quality) {
     });
 
     if (!response.ok) {
-        throw new Error(`Sasa API returned HTTP ${response.status} (Forbidden/Unauthorized)`);
+        // API එකෙන් එන සැබෑ දෝෂ විස්තරය කියවීම
+        const errorText = await response.text();
+        console.error('[Sasa API Debug Header]', response.status, errorText);
+        throw new Error(`Sasa API returned HTTP ${response.status}. Please check inputs or parameters.`);
     }
 
     const data = await response.json();
-    const downloadUrl = data.result?.download || data.result?.url || data.downloadUrl || data.url;
+    
+    // API response ව්‍යුහය පරීක්ෂා කර බාගත කිරීමේ සබැඳිය වෙන්කර ගැනීම
+    const downloadUrl = data.result?.download || data.result?.url || data.downloadUrl || data.url || (data.data && data.data.url);
 
     if (!downloadUrl || typeof downloadUrl !== 'string') {
-        throw new Error(data.message || data.error || 'API did not return a valid download URL.');
+        throw new Error(data.message || data.error || 'API did not return a valid download URL property.');
     }
 
     return downloadUrl;
@@ -125,7 +140,7 @@ cmd({
     if (!fullInput) {
         return reply(
             '🎧 *YouTube MP3 Downloader*\n\n' +
-            'Song එකේ නම සමඟ quality එක ඇතුළත් කරන්න.\n' +
+            'Song එකේ นම සමඟ quality එක ඇතුළත් කරන්න.\n' +
             'Example: *.mp3 Shape of You | 320*'
         );
     }
@@ -175,11 +190,11 @@ cmd({
             }
         }, { quoted: mek });
 
-        // API එකෙන් ලින්ක් එක ලබාගෙන බාගත කිරීම
+        // URLParams මඟින් HTTP 400 දෝෂය සම්පූර්ණයෙන්ම වළක්වා සබැඳිය ලබා ගැනීම
         const audioUrl = await getAudioUrlFromApi(video.url, quality);
         const audio = await downloadAudio(audioUrl);
 
-        // WhatsApp වෙත සින්දුව යැවීම
+        // WhatsApp වෙත සින්දුව සාර්ථකව යැවීම
         await conn.sendMessage(from, {
             audio,
             mimetype: 'audio/mpeg',
@@ -191,8 +206,8 @@ cmd({
         console.error('[MP3 DOWNLOAD ERROR]', error);
         
         let reason = error.message;
-        if (error.message.includes('403')) {
-            reason = 'API එකට ඇතුළත් කළ apikey එක වැරදියි හෝ කල් ඉකුත් වී ඇත. කරුණාකර නව apikey එකක් දමා උත්සාහ කරන්න.';
+        if (error.message.includes('400')) {
+            reason = 'API ඉල්ලීමේ දෝෂයක් පවතී (HTTP 400). කරුණාකර API key එක හෝ parameters වලංගුදැයි නැවත පරීක්ෂා කරන්න.';
         } else if (error.message === 'FILE_TOO_LARGE') {
             reason = 'Audio file එක 64 MB සීමාව ඉක්මවයි.';
         }

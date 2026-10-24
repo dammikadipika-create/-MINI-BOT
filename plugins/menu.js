@@ -22,7 +22,7 @@ async (conn, mek, m, {
     try {
         const prefix = config.PREFIX || '.';
         const botName = 'NIKKA X MD';
-        const ownerName = 'Dilshan Ashinsa';
+        const ownerName = 'Nikila vimoksha';
 
         const usedMemory = (
             process.memoryUsage().heapUsed / 1024 / 1024

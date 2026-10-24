@@ -46,7 +46,7 @@ return files;
 }
 
 cmd({
-pattern: 'menu',
+pattern: 'menu2',
 alias: ['menulist', 'menulistall'],
 react: '📋',
 desc: 'Show plugins and their registered commands',

@@ -2,7 +2,7 @@ const { cmd } = require('../command');
 const yts = require('yt-search');
 
 const API_KEY = 'Sasa_Dev_Api_79346efacb553ec6ee94f2f6453dec8658ec5e7b';
-const API_URL = 'https://sasa-dev-api.xyz/api/yt/mp3-dl';
+const API_URL = 'https://sasa-dev-api.xyz';
 const MAX_SIZE = 64 * 1024 * 1024;
 const TIMEOUT = 300000;
 const FOOTER = '> ɴɪᴋᴋᴀ x ᴍᴅ • ᴘᴏᴡᴇʀᴇᴅ ʙʏ ɴɪᴋᴋᴀ x ᴍᴅ';
@@ -30,26 +30,27 @@ async function searchSongs(query) {
             unique.set(item.videoId, {
                 id: item.videoId,
                 title: cleanName(item.title),
-                url: `https://www.youtube.com/watch?v=${item.videoId}`,
+                url: `https://youtube.com{item.videoId}`,
                 author: item.author?.name || 'YouTube',
                 duration: item.timestamp || 'Unknown',
                 savedAt: Date.now()
             });
         }
 
-        if (unique.size >= 1) break; // Direct ක්‍රමයට පළමු ප්‍රතිඵලය පමණක් ලබා ගනී
+        if (unique.size >= 1) break; 
     }
 
     return [...unique.values()];
 }
 
-async function getAudioUrlFromApi(videoUrl) {
-    // Sasa Dev API එක වෙත GET Request එකක් යවා direct ලින්ක් එක ලබා ගැනීම
-    const fullUrl = `${API_URL}?apikey=${API_KEY}&url=${encodeURIComponent(videoUrl)}&quality=128&raw=false`;
+// Sasa API එකෙන් සෘජුවම (raw=true) ලබා දෙන File stream එක බාගත කිරීමේ නව ශ්‍රිතය
+async function downloadAudioDirectly(videoUrl) {
+    // raw=true මඟින් JSON වෙනුවට සෘජුවම audio file stream එකක් API එකෙන් ලබා ගනී
+    const fullUrl = `${API_URL}?apikey=${API_KEY}&url=${encodeURIComponent(videoUrl)}&quality=128&raw=true`;
     
     const response = await fetch(fullUrl, {
         method: 'GET',
-        headers: { Accept: 'application/json' },
+        headers: { Accept: 'audio/*, application/octet-stream, */*' },
         signal: AbortSignal.timeout(TIMEOUT)
     });
 
@@ -57,35 +58,12 @@ async function getAudioUrlFromApi(videoUrl) {
         throw new Error(`Sasa API returned HTTP ${response.status}`);
     }
 
-    const data = await response.json();
-    
-    // API response එක අනුව download link එක වෙන්කර ගැනීම (පොදු key හැඩතල කිහිපයක්ම පරික්ෂා කරයි)
-    const downloadUrl = data.result || data.downloadUrl || data.url || (data.data && data.data.url);
-
-    if (!downloadUrl || typeof downloadUrl !== 'string') {
-        throw new Error('Sasa API output did not contain a valid download URL.');
-    }
-
-    return downloadUrl;
-}
-
-async function downloadAudio(url) {
-    const response = await fetch(url, {
-        headers: { Accept: 'audio/*, application/octet-stream, */*' },
-        signal: AbortSignal.timeout(TIMEOUT)
-    });
-
-    if (!response.ok) {
-        throw new Error(`Audio server returned HTTP ${response.status}`);
-    }
-
     const contentType = (response.headers.get('content-type') || '').toLowerCase();
-    if (
-        contentType.includes('text/html') ||
-        contentType.startsWith('text/') ||
-        contentType.includes('application/json')
-    ) {
-        throw new Error('Download server returned a webpage instead of audio.');
+    
+    // API එකෙන් වැරදීමකින් error JSON එකක් ආවොත් එය හසුකර ගනී
+    if (contentType.includes('application/json')) {
+        const errData = await response.json();
+        throw new Error(errData.message || errData.error || 'API Internal Error');
     }
 
     const declaredSize = Number(response.headers.get('content-length') || 0);
@@ -94,7 +72,7 @@ async function downloadAudio(url) {
     }
 
     if (!response.body) {
-        throw new Error('Empty audio response.');
+        throw new Error('Empty audio response from Sasa API.');
     }
 
     const chunks = [];
@@ -123,7 +101,7 @@ cmd({
     pattern: 'mp3',
     alias: ['song', 'ytaudio', 'ytmp3'],
     react: '🎵',
-    desc: 'Search songs and download MP3 via Sasa Dev API',
+    desc: 'Search songs and download MP3 via Sasa Dev API directly',
     category: 'download',
     filename: __filename
 }, async (conn, mek, m, { from, args, reply }) => {
@@ -155,7 +133,7 @@ cmd({
 
         await conn.sendMessage(from, {
             text:
-                '╭━━〔 *ᴍᴘ3 ᴅᴏᴡණʟᴏᴀᴅ* 〕━━╮\n' +
+                '╭━━〔 *ᴍᴘ3 ᴅᴏᴡɴʟᴏᴀᴅ* 〕━━╮\n' +
                 `┃ 🔍 Title: ${video.title}\n` +
                 `┃ 👤 Channel: ${video.author}\n` +
                 `┃ 🕒 Duration: ${video.duration}\n` +
@@ -164,13 +142,10 @@ cmd({
                 FOOTER
         }, { quoted: mek });
 
-        // 1. Sasa Dev API එකෙන් ඩවුන්ලෝඩ් ලින්ක් එක ලබා ගැනීම
-        const audioUrl = await getAudioUrlFromApi(video.url);
-        
-        // 2. ලබාගත් ලින්ක් එකෙන් Audio file එක බාගත කිරීම
-        const audio = await downloadAudio(audioUrl);
+        // Sasa Dev API එක හරහා Direct File එක බාගත කිරීම
+        const audio = await downloadAudioDirectly(video.url);
 
-        // 3. WhatsApp හරහා ගීතය යැවීම
+        // WhatsApp හරහා ගීතය සාර්ථකව යැවීම
         await conn.sendMessage(from, {
             audio,
             mimetype: 'audio/mpeg',

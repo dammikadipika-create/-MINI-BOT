@@ -119,7 +119,7 @@ cmd(
       detailsText += `│ ➤ ᴘʟᴇᴀsᴇ ᴡᴀɪᴛ\n`;
       detailsText += `│\n`;
       detailsText += `╰━━━━━━➤ ${BOT_NAME} 🚀\n\n`;
-      detailsText += `> © ᴘᴏᴡᴇʀᴇᴅ ʙʏ ${OWNER_NAME}`;
+      detailsText += `> ɴɪᴋᴋᴀ x ᴍᴅ • ᴘᴏᴡᴇʀᴇᴅ ʙʏ ɴɪᴋᴋᴀ x ᴍᴅ`;
 
       // Update loading message
       await conn.sendMessage(
@@ -151,7 +151,7 @@ cmd(
       videoCaption += `│\n`;
       videoCaption += `╰━━━━━━━━━━━━━━━━━━➤\n\n`;
       videoCaption += `➤ ᴇɴᴊᴏʏ ʏᴏᴜʀ ᴠɪᴅᴇᴏ! ❤️\n\n`;
-      videoCaption += `> ⚡ ${BOT_NAME} • ᴘᴏᴡᴇʀᴇᴅ ʙʏ ${OWNER_NAME} 🚀`;
+      videoCaption += `> ɴɪᴋᴋᴀ x ᴍᴅ • ᴘᴏᴡᴇʀᴇᴅ ʙʏ ɴɪᴋᴋᴀ x ᴍᴅ 🚀`;
 
       // Send video
       await conn.sendMessage(

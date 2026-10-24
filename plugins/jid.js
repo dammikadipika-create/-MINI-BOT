@@ -1,3 +1,4 @@
+const { sendPluginButtons } = require('../lib/buttons');
 const { cmd } = require('../command');
 
 cmd({
@@ -40,12 +41,12 @@ async (conn, mek, m, {
         await conn.sendMessage(
             from,
             {
-                image: { url: `https://i.ibb.co/67DRMzkf/b5fbf712e8fd.jpg` }, // ඔයාගේ Image URL එක මෙතනට දාන්න
+                image: { url: `https://i.ibb.co/qPDNmSY/5cdec1f68264.jpg` }, // ඔයාගේ Image URL එක මෙතනට දාන්න
                 caption:
-`👋 HELLOW...*${pushname || 'User'}* ❤️ Welcome to ɴɪᴋᴋᴀ x ᴍᴅ
+`👋 HELLOW...*${pushname || 'User'}* ❤️ Welcome to CYBER X THENULA
 
 
-✅NIKKA X MD✅
+✅CYBER THENUVA X MD✅
 *╭──────────────●●►*
 *┋* 🆔 *JID:* ${jid}
 *╰──────────────●●►*`,
@@ -65,7 +66,7 @@ async (conn, mek, m, {
                             '120363403804248705@newsletter',
 
                         newsletterName:
-                            'ɴɪᴋᴋᴀ x ᴍᴅ •',
+                            'CYBER XMD',
 
                         serverMessageId: 143
 
@@ -78,6 +79,7 @@ async (conn, mek, m, {
             }
         );
 
+        await sendPluginButtons(conn, from, 'jid', mek);
 
     } catch (error) {
         console.error("JID Plugin Error:", error);

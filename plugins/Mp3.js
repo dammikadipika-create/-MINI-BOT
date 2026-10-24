@@ -2,10 +2,10 @@ const { cmd } = require('../command');
 const yts = require('yt-search');
 
 const API_KEY = 'Sasa_Dev_Api_79346efacb553ec6ee94f2f6453dec8658ec5e7b';
-const API_URL = 'https://sasa-dev-api.xyz';
+const API_URL = 'https://sasa-dev-api.xyz/api/yt/mp3-dl';
 const MAX_SIZE = 64 * 1024 * 1024;
 const TIMEOUT = 300000;
-const FOOTER = '> ɴɪᴋᴋᴀ x ᴍᴅ • ᴘᴏᴡᴇʀᴇഡ് ʙʏ ɴɪᴋᴋᴀ x ᴍᴅ';
+const FOOTER = '> ɴɪᴋᴋᴀ x ᴍᴅ • ᴘᴏᴡᴇʀᴇᴅ ʙʏ ɴɪᴋᴋᴀ x ᴍᴅ';
 
 const activeDownloads = new Set();
 
@@ -43,18 +43,23 @@ async function searchSongs(query) {
     return [...unique.values()];
 }
 
+// 403 Bypass කිරීම සඳහා User-Agent Headers සහිතව සකස් කළ නව ශ්‍රිතය
 async function getAudioUrlFromApi(videoUrl, quality) {
     const fullUrl = `${API_URL}?apikey=${API_KEY}&url=${encodeURIComponent(videoUrl)}&quality=${quality}&raw=false`;
     
     const response = await fetch(fullUrl, {
         method: 'GET',
-        headers: { Accept: 'application/json' },
+        headers: { 
+            'Accept': 'application/json',
+            // 403 Forbidden දෝෂය මඟහරවා ගැනීමට Browser එකක් ලෙස පෙනී සිටීම
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+        },
         redirect: 'follow',
         signal: AbortSignal.timeout(TIMEOUT)
     });
 
     if (!response.ok) {
-        throw new Error(`Sasa API returned HTTP ${response.status}`);
+        throw new Error(`Sasa API returned HTTP ${response.status} (Forbidden/Unauthorized)`);
     }
 
     const data = await response.json();
@@ -69,22 +74,16 @@ async function getAudioUrlFromApi(videoUrl, quality) {
 
 async function downloadAudio(url) {
     const response = await fetch(url, {
-        headers: { Accept: 'audio/*, application/octet-stream, */*' },
+        headers: { 
+            'Accept': 'audio/*, application/octet-stream, */*',
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+        },
         redirect: 'follow',
         signal: AbortSignal.timeout(TIMEOUT)
     });
 
     if (!response.ok) {
         throw new Error(`Audio hosting server returned HTTP ${response.status}`);
-    }
-
-    const contentType = (response.headers.get('content-type') || '').toLowerCase();
-    if (
-        contentType.includes('text/html') ||
-        contentType.startsWith('text/') ||
-        contentType.includes('application/json')
-    ) {
-        throw new Error('Download server returned an invalid content type instead of audio.');
     }
 
     const declaredSize = Number(response.headers.get('content-length') || 0);
@@ -110,15 +109,14 @@ async function downloadAudio(url) {
         chunks.push(buffer);
     }
 
-    const audio = Buffer.concat(chunks);
-    return audio;
+    return Buffer.concat(chunks);
 }
 
 cmd({
     pattern: 'mp3',
     alias: ['song', 'ytaudio', 'ytmp3'],
     react: '🎵',
-    desc: 'Search songs and download MP3 with dynamic verification template',
+    desc: 'Search songs and download MP3 cleanly',
     category: 'download',
     filename: __filename
 }, async (conn, mek, m, { from, args, reply }) => {
@@ -160,7 +158,7 @@ cmd({
 
         const video = results[0]; 
 
-        // 🟢 ඔබ ඉල්ලූ පරිදි WhatsApp Security Card එක සහ කොළ පාට බටන් එක සෘජුවම නිර්මාණය කර යැවීම:
+        // 🟢 ඔබ ඉල්ලූ පරිදි "Download" බටන් එක සහිත නිල ආරක්ෂිත පණිවිඩය (Security Warning Card)
         await conn.sendMessage(from, {
             text: `*WhatsApp can't verify the security of this media. Only download if you trust the sender.*`,
             contextInfo: {
@@ -172,17 +170,16 @@ cmd({
                     mediaType: 2,
                     sourceUrl: video.url,
                     mediaUrl: video.url,
-                    // බෝට්ටුවේ ලෝගෝ එක හෝ යූටියුබ් තම්බ්නෙල් එක මෙතැනට දිය හැක
                     thumbnailUrl: 'https://ibb.co' 
                 }
             }
         }, { quoted: mek });
 
-        // API ක්‍රියාවලිය සිදුවේ
+        // API එකෙන් ලින්ක් එක ලබාගෙන බාගත කිරීම
         const audioUrl = await getAudioUrlFromApi(video.url, quality);
         const audio = await downloadAudio(audioUrl);
 
-        // සින්දුව WhatsApp එකට ලබා දීම
+        // WhatsApp වෙත සින්දුව යැවීම
         await conn.sendMessage(from, {
             audio,
             mimetype: 'audio/mpeg',
@@ -192,8 +189,16 @@ cmd({
 
     } catch (error) {
         console.error('[MP3 DOWNLOAD ERROR]', error);
+        
+        let reason = error.message;
+        if (error.message.includes('403')) {
+            reason = 'API එකට ඇතුළත් කළ apikey එක වැරදියි හෝ කල් ඉකුත් වී ඇත. කරුණාකර නව apikey එකක් දමා උත්සාහ කරන්න.';
+        } else if (error.message === 'FILE_TOO_LARGE') {
+            reason = 'Audio file එක 64 MB සීමාව ඉක්මවයි.';
+        }
+
         await conn.sendMessage(from, {
-            text: `❌ *MP3 Download Failed*\n${error.message}\n\n${FOOTER}`
+            text: `❌ *MP3 Download Failed*\n${reason}\n\n${FOOTER}`
         }, { quoted: mek });
     } finally {
         activeDownloads.delete(from);

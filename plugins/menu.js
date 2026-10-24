@@ -54,30 +54,11 @@ async (conn, mek, m, {
 ╭━━〔 📥 ᴅᴏᴡɴʟᴏᴀᴅᴇʀ 〕━━╮
 │
 │ 📹 *.fb <url>*
-│ 📸 *.insta <url>*
-│ 🎬 *.video <url>*
-│ 📁 *.gdrive <url>*
-│ 🐦 *.twitter <url>*
-│ 🎵 *.tt <url>*
-│ 📂 *.mediafire <url>*
-│ 🎧 *.song <query>*
-│ ▶️ *.play <query>*
-│ 🎞️ *.video2 <url>*
-│ 🖼️ *.img <query>*
-│ 📦 *.apk <name>*
-│ 🎭 *.darama <title>*
-│ 🎶 *.play2 <title>*
-│ 📺 *.baiscope <url>*
-│ 🎬 *.ginisisila <title>*
 │
 ╰━━━━━━━━━━━━━━━━━━━━╯
 
 ╭━━〔 🔎 sᴇᴀʀᴄʜ 〕━━╮
 │
-│ 🔍 *.yts <text>*
-│ 🎵 *.yta <url>*
-│ 🔎 *.loli <text>*
-│ 🎬 *.movieinfo <text>*
 │ 🖼️ *.img <text>*
 │ 🌦️ *.weather <city>*
 │
@@ -85,29 +66,14 @@ async (conn, mek, m, {
 
 ╭━━〔 🧠 ᴀɪ ᴄᴏᴍᴍᴀɴᴅs 〕━━╮
 │
-│ 🤖 *.gpt <text>*
-│ ✨ *.ai <text>*
-│ 💬 *.bot <text>*
+│ 
+│ 
 │
 ╰━━━━━━━━━━━━━━━━━━━━╯
 
 ╭━━〔 👨‍💻 ᴏᴡɴᴇʀ ᴄᴏᴍᴍᴀɴᴅs 〕━━╮
 │
-│ 🔄 *.updatecmd*
-│ ⚙️ *.settings*
-│ 👑 *.owner*
-│ 📦 *.repo*
-│ 💻 *.system*
-│ 📊 *.status*
-│ 🚫 *.block*
-│ ✅ *.unblock*
-│ 🔴 *.shutdown*
-│ 🧹 *.clearchats*
-│ 🖼️ *.setpp*
-│ 📢 *.broadcast*
-│ 🆔 *.jid*
-│ 👥 *.gjid*
-│ 🔁 *.restart*
+│ 
 │
 ╰━━━━━━━━━━━━━━━━━━━━╯
 
@@ -147,14 +113,11 @@ async (conn, mek, m, {
 ╭━━〔 📃 ɪɴғᴏ ᴄᴏᴍᴍᴀɴᴅs 〕━━╮
 │
 │ 📋 *.menu*
-│ 📋 *.menu2*
-│ 📋 *.menu3*
 │ ℹ️ *.about*
 │ 📜 *.script*
 │ 📦 *.repo*
 │ 💚 *.alive*
 │ 🤖 *.botinfo*
-│ 📊 *.status*
 │ 🆘 *.support*
 │ ⚡ *.ping*
 │ ⚡ *.ping2*

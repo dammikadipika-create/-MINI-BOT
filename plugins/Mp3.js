@@ -30,6 +30,7 @@ async function searchSongs(query) {
             unique.set(item.videoId, {
                 id: item.videoId,
                 title: cleanName(item.title),
+                // API එක බලාපොරොත්තු වන සරලම YouTube URL හැඩතලයට සකස් කිරීම
                 url: `https://youtube.com{item.videoId}`,
                 author: item.author?.name || 'YouTube',
                 duration: item.timestamp || 'Unknown',
@@ -43,20 +44,12 @@ async function searchSongs(query) {
     return [...unique.values()];
 }
 
-// HTTP 400 දෝෂය මඟහැරීම සඳහා URL එක සහ Parameters නිසි පරිදි සකස් කළ නව ශ්‍රිතය
+// URL සහ Quality අගයන් Sasa API එකට ගැළපෙන සේ නිවැරදිව යවන ශ්‍රිතය
 async function getAudioUrlFromApi(videoUrl, qualityValue) {
-    // Quality අගය string එකක් ලෙස නොව අංකයක් (number) ලෙස පරිවර්තනය කරයි
     const parsedQuality = parseInt(qualityValue, 10) || 128;
     
-    // URLSearchParams මඟින් URL එක කිසිදු ලේඛන දෝෂයකින් තොරව සකස් කරයි (HTTP 400 වැළැක්වීමට)
-    const params = new URLSearchParams({
-        apikey: API_KEY,
-        url: videoUrl,
-        quality: parsedQuality.toString(),
-        raw: 'false'
-    });
-
-    const fullUrl = `${API_URL}?${params.toString()}`;
+    // URL එකේ කිසිදු සංකේත දෝෂයක් නොවීමට encodeURIComponent නිවැරදිව භාවිතය
+    const fullUrl = `${API_URL}?apikey=${API_KEY}&url=${encodeURIComponent(videoUrl)}&quality=${parsedQuality}&raw=false`;
     
     const response = await fetch(fullUrl, {
         method: 'GET',
@@ -69,19 +62,18 @@ async function getAudioUrlFromApi(videoUrl, qualityValue) {
     });
 
     if (!response.ok) {
-        // API එකෙන් එන සැබෑ දෝෂ විස්තරය කියවීම
         const errorText = await response.text();
         console.error('[Sasa API Debug Header]', response.status, errorText);
-        throw new Error(`Sasa API returned HTTP ${response.status}. Please check inputs or parameters.`);
+        throw new Error(`Sasa API returned HTTP ${response.status}. Please check parameters.`);
     }
 
     const data = await response.json();
     
-    // API response ව්‍යුහය පරීක්ෂා කර බාගත කිරීමේ සබැඳිය වෙන්කර ගැනීම
+    // API එකෙන් එන download link එක වෙන්කර ගැනීම
     const downloadUrl = data.result?.download || data.result?.url || data.downloadUrl || data.url || (data.data && data.data.url);
 
     if (!downloadUrl || typeof downloadUrl !== 'string') {
-        throw new Error(data.message || data.error || 'API did not return a valid download URL property.');
+        throw new Error(data.error || data.message || 'API did not return a valid download URL.');
     }
 
     return downloadUrl;
@@ -140,7 +132,7 @@ cmd({
     if (!fullInput) {
         return reply(
             '🎧 *YouTube MP3 Downloader*\n\n' +
-            'Song එකේ นම සමඟ quality එක ඇතුළත් කරන්න.\n' +
+            'Song එකේ නම සමඟ quality එක ඇතුළත් කරන්න.\n' +
             'Example: *.mp3 Shape of You | 320*'
         );
     }
@@ -190,7 +182,7 @@ cmd({
             }
         }, { quoted: mek });
 
-        // URLParams මඟින් HTTP 400 දෝෂය සම්පූර්ණයෙන්ම වළක්වා සබැඳිය ලබා ගැනීම
+        // URL දෝෂය සම්පූර්ණයෙන්ම මඟහැර API එකෙන් සබැඳිය ලබා ගැනීම
         const audioUrl = await getAudioUrlFromApi(video.url, quality);
         const audio = await downloadAudio(audioUrl);
 
@@ -207,7 +199,7 @@ cmd({
         
         let reason = error.message;
         if (error.message.includes('400')) {
-            reason = 'API ඉල්ලීමේ දෝෂයක් පවතී (HTTP 400). කරුණාකර API key එක හෝ parameters වලංගුදැයි නැවත පරීක්ෂා කරන්න.';
+            reason = 'යූටියුබ් ලින්ක් එකේ ගැටලුවක් පවතී. කරුණාකර නැවත උත්සාහ කරන්න.';
         } else if (error.message === 'FILE_TOO_LARGE') {
             reason = 'Audio file එක 64 MB සීමාව ඉක්මවයි.';
         }

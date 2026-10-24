@@ -5,12 +5,12 @@ const { cmd, commands } = require('../command');
 const PLUGIN_DIR = __dirname;
 
 const MENU_IMAGE =
-'https://i.ibb.co/LXTMV60v/0bade47afdf9.jpg';
+'https://i.ibb.co/67DRMzkf/b5fbf712e8fd.jpg';
 
 const BOT_NAME = 'ɴɪᴋᴋᴀ x ᴍᴅ';
 
 const FOOTER =
-'ɴɪᴋᴋᴀ x ᴍᴅ • ᴘᴏᴡᴇʀᴇᴅ ʙʏ ɴɪᴋᴋᴀ x ᴍᴅ';
+'> ɴɪᴋᴋᴀ x ᴍᴅ • ᴘᴏᴡᴇʀᴇᴅ ʙʏ ɴɪᴋᴋᴀ x ᴍᴅ';
 
 function getPluginFiles(dir) {
 let files = [];
@@ -46,7 +46,7 @@ return files;
 }
 
 cmd({
-pattern: 'menu2',
+pattern: 'menu',
 alias: ['menulist', 'menulistall'],
 react: '📋',
 desc: 'Show plugins and their registered commands',

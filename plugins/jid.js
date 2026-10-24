@@ -3,7 +3,7 @@ const { cmd } = require('../command');
 cmd({
     pattern: 'jid',
     alias: ['getjid', 'id'],
-    desc: 'Get WhatsApp JID',
+    desc: 'Get chat, group, or newsletter JID',
     category: 'main',
     react: '🆔',
     filename: __filename
@@ -15,12 +15,17 @@ cmd({
     pushname
 }) => {
     try {
-        // Use the message's actual remote JID when available.
-        const remoteJid = mek?.key?.remoteJid || from;
+        // Prefer the original WhatsApp message's remote JID.
+        const remoteJid =
+            mek?.key?.remoteJid ||
+            m?.key?.remoteJid ||
+            from ||
+            null;
 
         let jid = null;
+        let jidType = 'Unknown';
 
-        // Quoted message JID
+        // If the command is used as a reply, get the quoted sender.
         if (quoted) {
             jid =
                 quoted.sender ||
@@ -29,12 +34,12 @@ cmd({
                 null;
         }
 
-        // Mentioned user's JID
+        // If a user is mentioned, get their JID.
         if (!jid && Array.isArray(mentionedJid) && mentionedJid.length) {
             jid = mentionedJid[0];
         }
 
-        // Default: current chat/channel JID
+        // Otherwise, get the chat/channel JID itself.
         if (!jid) {
             jid = remoteJid;
         }
@@ -43,21 +48,36 @@ cmd({
             return reply('❌ JID එක ලබාගන්න බැරි වුණා.');
         }
 
+        if (jid.endsWith('@newsletter')) {
+            jidType = 'WhatsApp Channel / Newsletter';
+        } else if (jid.endsWith('@g.us')) {
+            jidType = 'WhatsApp Group';
+        } else if (jid.endsWith('@s.whatsapp.net')) {
+            jidType = 'WhatsApp User';
+        } else {
+            jidType = 'WhatsApp Chat';
+        }
+
         const caption = `
 ╭━━〔 🆔 ɴɪᴋᴋᴀ x ᴍᴅ 〕━━╮
 ┃
 ┃ 👋 ʜᴇʟʟᴏ ${pushname || 'User'} ❤️
 ┃
-┃ 🆔 ᴊɪᴅ ɪɴғᴏ
+┃ 🤖 ʙᴏᴛ : ɴɪᴋᴋᴀ x ᴍᴅ
 ┃
-┃ ➤ *JID:* ${jid}
+┃ 📌 ᴊɪᴅ ɪɴғᴏ
+┃
+┃ ➤ *Type:* ${jidType}
+┃ ➤ *JID:*
+┃ ${jid}
 ┃
 ╰━━━━━━━━━━━━━━━━╯
 
-> ɴɪᴋᴋᴀ x ᴍᴅ • ᴘᴏᴡᴇʀᴇᴅ ʙʏ ɴɪᴋᴋᴀ x ᴍᴅ 🚀`;
+> ɴɪᴋᴋᴀ x ᴍᴅ 🚀
+`;
 
         await conn.sendMessage(
-            remoteJid,
+            from || remoteJid,
             {
                 image: {
                     url: 'https://i.ibb.co/qPDNmSY/5cdec1f68264.jpg'
@@ -76,8 +96,15 @@ cmd({
             },
             { quoted: mek }
         );
+
     } catch (error) {
-        console.error('JID Plugin Error:', error);
-        return reply('❌ JID ලබාගැනීමේදී දෝෂයක් ඇති වුණා.');
+        console.error('NIKKA X MD JID Plugin Error:', error);
+
+        try {
+            await reply(
+                '❌ JID ලබාගැනීමේදී දෝෂයක් ඇති වුණා.\n\n' +
+                'Error: ' + (error.message || 'Unknown error')
+            );
+        } catch {}
     }
 });

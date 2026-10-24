@@ -6,7 +6,10 @@ const API_URL = 'https://sasa-dev-api.xyz/api/yt/mp3-dl';
 
 const MAX_SIZE = 64 * 1024 * 1024;
 const TIMEOUT = 300000;
-const FOOTER = '> ɴɪᴋᴋᴀ x ᴍᴅ • ᴘᴏᴡᴇʀᴇᴅ ʙʏ ɴɪᴋᴋᴀ x ᴍᴅ';
+const MAX_RETRIES = 3;
+
+const FOOTER =
+    '> ɴɪᴋᴋᴀ x ᴍᴅ • ᴘᴏᴡᴇʀᴇᴅ ʙʏ ɴɪᴋᴋᴀ x ᴍᴅ';
 
 const activeDownloads = new Set();
 
@@ -15,6 +18,33 @@ function cleanName(value) {
         .replace(/[\\/:*?"<>|\x00-\x1F]/g, '')
         .trim()
         .slice(0, 100) || 'NIKKA-X-MD';
+}
+
+function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+function getRetryDelay(response, attempt) {
+    const retryAfter = response.headers.get('retry-after');
+
+    if (retryAfter) {
+        const seconds = Number(retryAfter);
+
+        if (Number.isFinite(seconds) && seconds > 0) {
+            return Math.min(seconds * 1000, 180000);
+        }
+
+        const date = Date.parse(retryAfter);
+
+        if (Number.isFinite(date)) {
+            return Math.min(
+                Math.max(date - Date.now(), 1000),
+                180000
+            );
+        }
+    }
+
+    return attempt * 60000;
 }
 
 async function searchSongs(query) {
@@ -37,7 +67,7 @@ async function searchSongs(query) {
     };
 }
 
-async function downloadAudioDirectly(videoUrl, quality) {
+async function requestSasaApi(videoUrl, quality) {
     if (!API_KEY) {
         throw new Error(
             'SASA_API_KEY GitHub Secret එක සකස් කර නැත.'
@@ -51,34 +81,71 @@ async function downloadAudioDirectly(videoUrl, quality) {
         raw: 'false'
     });
 
-    const response = await fetch(`${API_URL}?${params.toString()}`, {
-        method: 'GET',
-        headers: {
-            Accept: 'application/json, audio/*, application/octet-stream, */*'
-        },
-        redirect: 'follow',
-        signal: AbortSignal.timeout(TIMEOUT)
-    });
+    const endpoint = `${API_URL}?${params.toString()}`;
 
-    if (!response.ok) {
-        const body = await response.text().catch(() => '');
-
-        console.error('[SASA MP3 API ERROR]', {
-            status: response.status,
-            body: body.slice(0, 1000)
+    for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+        const response = await fetch(endpoint, {
+            method: 'GET',
+            headers: {
+                Accept: 'application/json, audio/*, application/octet-stream, */*'
+            },
+            redirect: 'follow',
+            signal: AbortSignal.timeout(TIMEOUT)
         });
 
-        throw new Error(
-            `Sasa API HTTP ${response.status}: ${body.slice(0, 200)}`
-        );
+        if (response.status === 429) {
+            const delay = getRetryDelay(response, attempt);
+
+            await response.text().catch(() => '');
+
+            if (attempt === MAX_RETRIES) {
+                throw new Error(
+                    'Sasa Dev API එකේ conversion limit එක ඉක්මවා ඇත (HTTP 429). ටික වේලාවකින් නැවත උත්සාහ කරන්න.'
+                );
+            }
+
+            console.log(
+                `[SASA MP3] HTTP 429. Retry ${attempt + 1}/${MAX_RETRIES} after ${Math.ceil(delay / 1000)} seconds.`
+            );
+
+            await sleep(delay);
+            continue;
+        }
+
+        if (response.status >= 500 && attempt < MAX_RETRIES) {
+            await response.text().catch(() => '');
+            await sleep(attempt * 5000);
+            continue;
+        }
+
+        if (!response.ok) {
+            const body = await response.text().catch(() => '');
+
+            console.error('[SASA MP3 API ERROR]', {
+                status: response.status,
+                body: body.slice(0, 1000)
+            });
+
+            throw new Error(
+                `Sasa API HTTP ${response.status}: ${body.slice(0, 200)}`
+            );
+        }
+
+        return response;
     }
+
+    throw new Error('Sasa API එකට සම්බන්ධ වීමට නොහැකි විය.');
+}
+
+async function downloadAudioDirectly(videoUrl, quality) {
+    const response = await requestSasaApi(videoUrl, quality);
 
     const contentType = (
         response.headers.get('content-type') || ''
     ).toLowerCase();
 
-    let downloadUrl;
     let result = {};
+    let downloadUrl;
 
     if (
         contentType.includes('application/json') ||
@@ -88,7 +155,9 @@ async function downloadAudioDirectly(videoUrl, quality) {
 
         if (data?.status === false || data?.success === false) {
             throw new Error(
-                data.message || data.error || 'Sasa API request එක අසාර්ථකයි.'
+                data.message ||
+                data.error ||
+                'Sasa API request එක අසාර්ථකයි.'
             );
         }
 
@@ -112,25 +181,7 @@ async function downloadAudioDirectly(videoUrl, quality) {
             );
         }
     } else {
-        // API එක කෙළින්ම audio data ලබා දුන්නොත්.
-        const audio = Buffer.from(await response.arrayBuffer());
-
-        if (!audio.length) {
-            throw new Error('API එකෙන් audio data ලැබුණේ නැහැ.');
-        }
-
-        if (audio.length > MAX_SIZE) {
-            throw new Error('FILE_TOO_LARGE');
-        }
-
-        if (
-            contentType.includes('text/html') ||
-            contentType.includes('text/plain')
-        ) {
-            throw new Error('API එකෙන් audio වෙනුවට text response එකක් ලැබුණා.');
-        }
-
-        return audio;
+        return await readAudioResponse(response);
     }
 
     let parsedUrl;
@@ -165,46 +216,56 @@ async function downloadAudioDirectly(videoUrl, quality) {
         throw new Error(`Audio CDN HTTP ${audioResponse.status}`);
     }
 
-    const cdnType = (
-        audioResponse.headers.get('content-type') || ''
-    ).toLowerCase();
-
-    const declaredSize = Number(
-        audioResponse.headers.get('content-length') || 0
-    );
-
     if (
-        declaredSize > MAX_SIZE ||
+        Number(audioResponse.headers.get('content-length') || 0) > MAX_SIZE ||
         Number(result?.sizeBytes || 0) > MAX_SIZE
     ) {
         throw new Error('FILE_TOO_LARGE');
     }
 
+    return await readAudioResponse(audioResponse);
+}
+
+async function readAudioResponse(response) {
+    const contentType = (
+        response.headers.get('content-type') || ''
+    ).toLowerCase();
+
     if (
-        cdnType.includes('application/json') ||
-        cdnType.includes('text/html')
+        contentType.includes('application/json') ||
+        contentType.includes('text/html')
     ) {
-        const body = await audioResponse.text().catch(() => '');
+        const body = await response.text().catch(() => '');
 
-        console.error('[SASA CDN INVALID RESPONSE]', body.slice(0, 500));
+        console.error('[SASA INVALID AUDIO RESPONSE]', body.slice(0, 500));
 
-        throw new Error('CDN එකෙන් MP3 වෙනුවට error response එකක් ලැබුණා.');
+        throw new Error(
+            'Download server එකෙන් audio වෙනුවට error response එකක් ලැබුණා.'
+        );
     }
 
-    if (!audioResponse.body) {
-        throw new Error('CDN එකෙන් audio stream එකක් ලැබුණේ නැහැ.');
+    const declaredSize = Number(
+        response.headers.get('content-length') || 0
+    );
+
+    if (declaredSize > MAX_SIZE) {
+        throw new Error('FILE_TOO_LARGE');
+    }
+
+    if (!response.body) {
+        throw new Error('Audio stream එකක් ලැබුණේ නැහැ.');
     }
 
     const chunks = [];
     let totalSize = 0;
 
-    for await (const chunk of audioResponse.body) {
+    for await (const chunk of response.body) {
         const buffer = Buffer.from(chunk);
         totalSize += buffer.length;
 
         if (totalSize > MAX_SIZE) {
             try {
-                await audioResponse.body.cancel();
+                await response.body.cancel();
             } catch {}
 
             throw new Error('FILE_TOO_LARGE');

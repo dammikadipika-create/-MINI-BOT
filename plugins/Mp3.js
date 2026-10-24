@@ -47,85 +47,164 @@ async function downloadAudioDirectly(videoUrl, quality) {
     const params = new URLSearchParams({
         apikey: API_KEY,
         url: videoUrl,
-        quality: quality,
-        raw: 'true'
+        quality,
+        raw: 'false'
     });
 
-    const requestUrl = `${API_URL}?${params.toString()}`;
-
-    const response = await fetch(requestUrl, {
+    const response = await fetch(`${API_URL}?${params.toString()}`, {
         method: 'GET',
         headers: {
-            Accept: 'audio/mpeg, audio/*, application/octet-stream, application/json'
+            Accept: 'application/json, audio/*, application/octet-stream, */*'
         },
         redirect: 'follow',
         signal: AbortSignal.timeout(TIMEOUT)
     });
 
+    if (!response.ok) {
+        const body = await response.text().catch(() => '');
+
+        console.error('[SASA MP3 API ERROR]', {
+            status: response.status,
+            body: body.slice(0, 1000)
+        });
+
+        throw new Error(
+            `Sasa API HTTP ${response.status}: ${body.slice(0, 200)}`
+        );
+    }
+
     const contentType = (
         response.headers.get('content-type') || ''
     ).toLowerCase();
 
-    if (!response.ok) {
-        const errorBody = await response.text().catch(() => '');
-
-        console.error('[SASA MP3 API ERROR]', {
-            status: response.status,
-            body: errorBody.slice(0, 1500)
-        });
-
-        throw new Error(
-            `Sasa API HTTP ${response.status}: ${
-                errorBody.slice(0, 250) || 'No error details returned'
-            }`
-        );
-    }
+    let downloadUrl;
+    let result = {};
 
     if (
         contentType.includes('application/json') ||
-        contentType.includes('text/html')
+        contentType.includes('text/json')
     ) {
-        const body = await response.text().catch(() => '');
+        const data = await response.json();
 
-        console.error('[SASA MP3 INVALID RESPONSE]', {
-            contentType,
-            body: body.slice(0, 1500)
-        });
+        if (data?.status === false || data?.success === false) {
+            throw new Error(
+                data.message || data.error || 'Sasa API request එක අසාර්ථකයි.'
+            );
+        }
 
-        let message = body.slice(0, 250);
+        result = data?.result || data?.data || data;
 
-        try {
-            const data = JSON.parse(body);
-            message = data.message || data.error || message;
-        } catch {}
+        downloadUrl =
+            result?.download ||
+            result?.downloadUrl ||
+            result?.url;
 
-        throw new Error(
-            `API එක audio file එකක් වෙනුවට error response එකක් ලබා දුන්නා: ${message}`
-        );
+        if (!downloadUrl) {
+            console.error(
+                '[SASA MP3 RESPONSE]',
+                JSON.stringify(data).slice(0, 1500)
+            );
+
+            throw new Error(
+                data.message ||
+                result?.message ||
+                'API response එකේ download URL එකක් නැහැ.'
+            );
+        }
+    } else {
+        // API එක කෙළින්ම audio data ලබා දුන්නොත්.
+        const audio = Buffer.from(await response.arrayBuffer());
+
+        if (!audio.length) {
+            throw new Error('API එකෙන් audio data ලැබුණේ නැහැ.');
+        }
+
+        if (audio.length > MAX_SIZE) {
+            throw new Error('FILE_TOO_LARGE');
+        }
+
+        if (
+            contentType.includes('text/html') ||
+            contentType.includes('text/plain')
+        ) {
+            throw new Error('API එකෙන් audio වෙනුවට text response එකක් ලැබුණා.');
+        }
+
+        return audio;
     }
 
+    let parsedUrl;
+
+    try {
+        parsedUrl = new URL(downloadUrl);
+    } catch {
+        throw new Error('API එකෙන් ලැබුණු download URL එක වැරදියි.');
+    }
+
+    if (parsedUrl.protocol !== 'https:') {
+        throw new Error('Download URL එක HTTPS විය යුතුයි.');
+    }
+
+    const audioResponse = await fetch(parsedUrl.toString(), {
+        method: 'GET',
+        headers: {
+            Accept: 'audio/mpeg, audio/*, application/octet-stream, */*'
+        },
+        redirect: 'follow',
+        signal: AbortSignal.timeout(TIMEOUT)
+    });
+
+    if (!audioResponse.ok) {
+        const body = await audioResponse.text().catch(() => '');
+
+        console.error('[SASA CDN ERROR]', {
+            status: audioResponse.status,
+            body: body.slice(0, 500)
+        });
+
+        throw new Error(`Audio CDN HTTP ${audioResponse.status}`);
+    }
+
+    const cdnType = (
+        audioResponse.headers.get('content-type') || ''
+    ).toLowerCase();
+
     const declaredSize = Number(
-        response.headers.get('content-length') || 0
+        audioResponse.headers.get('content-length') || 0
     );
 
-    if (declaredSize > MAX_SIZE) {
+    if (
+        declaredSize > MAX_SIZE ||
+        Number(result?.sizeBytes || 0) > MAX_SIZE
+    ) {
         throw new Error('FILE_TOO_LARGE');
     }
 
-    if (!response.body) {
-        throw new Error('API එකෙන් audio data ලැබුණේ නැහැ.');
+    if (
+        cdnType.includes('application/json') ||
+        cdnType.includes('text/html')
+    ) {
+        const body = await audioResponse.text().catch(() => '');
+
+        console.error('[SASA CDN INVALID RESPONSE]', body.slice(0, 500));
+
+        throw new Error('CDN එකෙන් MP3 වෙනුවට error response එකක් ලැබුණා.');
+    }
+
+    if (!audioResponse.body) {
+        throw new Error('CDN එකෙන් audio stream එකක් ලැබුණේ නැහැ.');
     }
 
     const chunks = [];
     let totalSize = 0;
 
-    for await (const chunk of response.body) {
+    for await (const chunk of audioResponse.body) {
         const buffer = Buffer.from(chunk);
         totalSize += buffer.length;
 
         if (totalSize > MAX_SIZE) {
             try {
-                await response.body.cancel();
+                await audioResponse.body.cancel();
             } catch {}
 
             throw new Error('FILE_TOO_LARGE');
@@ -138,19 +217,6 @@ async function downloadAudioDirectly(videoUrl, quality) {
 
     if (!audio.length) {
         throw new Error('Downloaded audio file එක හිස්.');
-    }
-
-    // HTML/JSON වැනි වැරදි response එකක් MP3 ලෙස යැවීම වළක්වයි.
-    const start = audio.subarray(0, 100).toString('utf8').trimStart();
-
-    if (
-        start.startsWith('<!DOCTYPE html') ||
-        start.startsWith('<html') ||
-        start.startsWith('{')
-    ) {
-        throw new Error(
-            'API එකෙන් MP3 වෙනුවට error page එකක් ලැබුණා.'
-        );
     }
 
     return audio;
@@ -169,7 +235,8 @@ cmd({
     if (!fullInput) {
         return reply(
             '🎧 *YouTube MP3 Downloader*\n\n' +
-            'ගීතයේ නම සහ quality එක ලබා දෙන්න.\n\n' +
+            'ගීතයේ නම සමඟ quality එක ලබා දෙන්න.\n\n' +
+            'Example: *.mp3 Shape of You*\n' +
             'Example: *.mp3 Shape of You | 128*\n' +
             'Example: *.mp3 Shape of You | 320*\n\n' +
             'Default quality: 128kbps\n\n' +
@@ -189,7 +256,7 @@ cmd({
 
         if (!['128', '320'].includes(requestedQuality)) {
             return reply(
-                '❌ Quality එක 128 හෝ 320 ලෙස ලබා දෙන්න.\n\n' +
+                '❌ Quality එක 128 හෝ 320 ලෙස ලබා දෙන්න.\n' +
                 'Example: *.mp3 Shape of You | 320*'
             );
         }
@@ -210,12 +277,6 @@ cmd({
     activeDownloads.add(from);
 
     try {
-        if (!API_KEY) {
-            throw new Error(
-                'SASA_API_KEY GitHub Secret එක සකස් කර නැත.'
-            );
-        }
-
         const video = await searchSongs(query);
 
         if (!video) {

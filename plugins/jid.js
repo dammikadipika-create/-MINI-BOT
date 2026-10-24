@@ -15,54 +15,69 @@ cmd({
     pushname
 }) => {
     try {
-        let jid;
+        // Use the message's actual remote JID when available.
+        const remoteJid = mek?.key?.remoteJid || from;
 
+        let jid = null;
+
+        // Quoted message JID
         if (quoted) {
             jid =
                 quoted.sender ||
                 quoted.participant ||
-                quoted.key?.participant;
+                quoted.key?.participant ||
+                null;
         }
 
-        if (!jid && mentionedJid?.length) {
+        // Mentioned user's JID
+        if (!jid && Array.isArray(mentionedJid) && mentionedJid.length) {
             jid = mentionedJid[0];
         }
 
+        // Default: current chat/channel JID
         if (!jid) {
-            jid = from || mek.key?.remoteJid;
+            jid = remoteJid;
         }
 
         if (!jid) {
-            return reply('❌ JID එක හොයාගන්න බැරි වුණා.');
+            return reply('❌ JID එක ලබාගන්න බැරි වුණා.');
         }
 
-        const isChannel = jid.endsWith('@newsletter');
+        const caption = `
+╭━━〔 🆔 ɴɪᴋᴋᴀ x ᴍᴅ 〕━━╮
+┃
+┃ 👋 ʜᴇʟʟᴏ ${pushname || 'User'} ❤️
+┃
+┃ 🆔 ᴊɪᴅ ɪɴғᴏ
+┃
+┃ ➤ *JID:* ${jid}
+┃
+╰━━━━━━━━━━━━━━━━╯
 
-        const caption =
-            `╭━━〔 🆔 ɴɪᴋᴋᴀ x ᴍᴅ 〕━━╮\n` +
-            `┃ 👋 Hello: ${pushname || 'User'} ❤️\n` +
-            `┃ 🤖 Bot: NIKKA X MD\n` +
-            `┃ 📍 Type: ${isChannel ? 'Channel' : 'Chat'}\n` +
-            `┃ 🆔 JID:\n` +
-            `┃ ${jid}\n` +
-            `╰━━━━━━━━━━━━━━━━╯\n\n` +
-            `> ɴɪᴋᴋᴀ x ᴍᴅ • ᴘᴏᴡᴇʀᴇᴅ ʙʏ ɴɪᴋᴋᴀ x ᴍᴅ`;
+> ɴɪᴋᴋᴀ x ᴍᴅ • ᴘᴏᴡᴇʀᴇᴅ ʙʏ ɴɪᴋᴋᴀ x ᴍᴅ 🚀`;
 
         await conn.sendMessage(
-            from || mek.key.remoteJid,
+            remoteJid,
             {
                 image: {
-                    url: 'https://i.ibb.co/67DRMzkf/b5fbf712e8fd.jpg'
+                    url: 'https://i.ibb.co/qPDNmSY/5cdec1f68264.jpg'
                 },
-                caption
+                caption,
+                contextInfo: {
+                    mentionedJid: mek?.sender ? [mek.sender] : [],
+                    forwardingScore: 999,
+                    isForwarded: true,
+                    forwardedNewsletterMessageInfo: {
+                        newsletterJid: '120363403804248705@newsletter',
+                        newsletterName: 'NIKKA X MD',
+                        serverMessageId: 143
+                    }
+                }
             },
             { quoted: mek }
         );
-
     } catch (error) {
-        console.error('NIKKA X MD JID Error:', error);
-        return reply(
-            '❌ JID යැවීමට නොහැකි වුණා. Channel support එක හෝ bot library version එක පරීක්ෂා කරන්න.'
-        );
+        console.error('JID Plugin Error:', error);
+        return reply('❌ JID ලබාගැනීමේදී දෝෂයක් ඇති වුණා.');
     }
 });

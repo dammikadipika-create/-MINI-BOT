@@ -344,17 +344,20 @@ cmd({
             return reply('❌ ඔබ සෙවූ ගීතය සොයාගත නොහැකි විය.');
         }
 
-        await conn.sendMessage(from, {
-            text:
-                '╭━━〔 *ᴍᴘ3 ᴅᴏᴡɴʟᴏᴀᴅ* 〕━━╮\n' +
-                `┃ 🎵 Title: ${video.title}\n` +
-                `┃ 👤 Channel: ${video.author}\n` +
-                `┃ 🕒 Duration: ${video.duration}\n` +
-                `┃ 🎧 Quality: ${quality}kbps\n` +
-                '┃ ⏳ Audio එක සකස් කරමින්...\n' +
-                '╰━━━━━━━━━━━━━━━━━━╯\n' +
-                FOOTER
-        }, { quoted: mek });
+        const thumbnail = `https://i.ytimg.com/vi/${video.id}/hqdefault.jpg`;
+
+await conn.sendMessage(from, {
+    image: { url: thumbnail },
+    caption:
+        '╭━━〔 *ᴍᴘ3 ᴅᴏᴡɴʟᴏᴀᴅ* 〕━━╮\n' +
+        `┃ 🎵 *Title:* ${video.title}\n` +
+        `┃ 👤 *Channel:* ${video.author}\n` +
+        `┃ 🕒 *Duration:* ${video.duration}\n` +
+        `┃ 🎧 *Quality:* ${quality}kbps\n` +
+        '┃ ⏳ *Audio එක සකස් කරමින්...*\n' +
+        '╰━━━━━━━━━━━━━━━━━━╯\n\n' +
+        FOOTER
+}, { quoted: mek });
 
         const audio = await downloadAudioDirectly(
             video.url,

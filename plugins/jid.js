@@ -78,7 +78,6 @@ async (conn, mek, m, {
             }
         );
 
-        await sendPluginButtons(conn, from, 'jid', mek);
 
     } catch (error) {
         console.error("JID Plugin Error:", error);

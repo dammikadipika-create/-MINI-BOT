@@ -61,7 +61,9 @@ async (conn, mek, m, {
 │
 │ 🖼️ *.img <text>*
 │ 🌦️ *.weather <city>*
-│
+│    *.cartoon <url>*
+│    *.animedl <url>*
+│    *.animsearch <url>*
 ╰━━━━━━━━━━━━━━━━━━━━╯
 
 ╭━━〔 🧠 ᴀɪ ᴄᴏᴍᴍᴀɴᴅs 〕━━╮

@@ -46,7 +46,7 @@ cmd({
             `┃ 🆔 JID:\n` +
             `┃ ${jid}\n` +
             `╰━━━━━━━━━━━━━━━━╯\n\n` +
-            `> ɴɪᴋᴋᴀ x ᴍᴅ 🚀`;
+            `> ɴɪᴋᴋᴀ x ᴍᴅ • ᴘᴏᴡᴇʀᴇᴅ ʙʏ ɴɪᴋᴋᴀ x ᴍᴅ`;
 
         await conn.sendMessage(
             from || mek.key.remoteJid,

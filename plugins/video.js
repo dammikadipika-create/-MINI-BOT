@@ -10,16 +10,15 @@ const { pipeline } = require('stream/promises');
 const SASA_API_KEY = process.env.SASA_API_KEY;
 const API_URL = 'https://sasa-dev-api.xyz/api/yt/mp4-dl';
 
+const QUALITY = '720';
 const TIMEOUT = 300000;
 const MAX_MEDIA_SIZE = 512 * 1024 * 1024;
-const QUALITIES = ['360', '480', '720', '1080'];
 
 const FOOTER =
     '> ᴛʜᴇɴᴜᴠᴀ x ᴍᴅ • ᴘᴏᴡᴇʀᴇᴅ ʙʏ Dilshan Ashinsa';
 
-const pendingVideos = new Map();
-const pendingVideoNames = new Map();
-const registeredListeners = new WeakSet();
+const pendingDownloads = new Map();
+const activeDownloads = new Set();
 
 function isYouTubeUrl(value) {
     try {
@@ -45,99 +44,50 @@ function safeFileName(value) {
         .slice(0, 100) || 'THENUVA-X-MD';
 }
 
-function getMessageText(message) {
-    const msg = message?.message || {};
-
-    return (
-        msg.conversation ||
-        msg.extendedTextMessage?.text ||
-        msg.imageMessage?.caption ||
-        msg.videoMessage?.caption ||
-        msg.documentMessage?.caption ||
-        msg.ephemeralMessage?.message?.conversation ||
-        msg.ephemeralMessage?.message?.extendedTextMessage?.text ||
-        msg.viewOnceMessage?.message?.conversation ||
-        msg.viewOnceMessageV2?.message?.conversation ||
-        ''
-    ).trim();
-}
-
-async function sendQualityMenu(conn, from, mek, video) {
-    pendingVideos.set(from, {
-        url: video.url,
-        title: video.title || 'YouTube Video'
-    });
-
-    return conn.sendMessage(
-        from,
-        {
-            text:
-                '╭━━〔 *ᴛʜᴇɴᴜᴠᴀ x ᴍᴅ* 〕━━╮\n' +
-                '┃ 🎬 *VIDEO DOWNLOAD*\n' +
-                '┣━━━━━━━━━━━━━━━━━━╯\n' +
-                `┃ 📌 ${video.title || 'YouTube Video'}\n` +
-                '┃\n' +
-                '┃ 📺 *Quality එක තෝරන්න:*\n' +
-                '┃\n' +
-                '┃ 1️⃣ 360p\n' +
-                '┃ 2️⃣ 480p\n' +
-                '┃ 3️⃣ 720p HD\n' +
-                '┃ 4️⃣ 1080p Full HD\n' +
-                '┃\n' +
-                '┃ ✍️ පිළිතුරු ලෙස `360`, `480`, `720` හෝ `1080` එවන්න.\n' +
-                '┣━━━━━━━━━━━━━━━━━━╯\n' +
-                FOOTER
-        },
-        { quoted: mek }
-    );
-}
-
-async function downloadVideo(conn, mek, from, reply, quality) {
+async function downloadAndSend(conn, mek, from, video) {
     let tempDir;
 
+    if (activeDownloads.has(from)) {
+        return conn.sendMessage(
+            from,
+            { text: '⏳ දැනටමත් වීඩියෝවක් Download වෙනවා. කරුණාකර රැඳී සිටින්න.' },
+            { quoted: mek }
+        );
+    }
+
+    activeDownloads.add(from);
+
     try {
-        const selected = pendingVideos.get(from);
-
-        if (!selected?.url) {
-            return reply(
-                '❌ වීඩියෝවක් තෝරාගෙන නැහැ.\n\n' +
-                'මුලින් `.video` command එක භාවිත කරන්න.\n\n' +
-                FOOTER
-            );
-        }
-
         if (!SASA_API_KEY) {
-            return reply(
-                '❌ `SASA_API_KEY` GitHub Secret එක සකස් කර නැහැ.\n\n' +
-                FOOTER
-            );
-        }
-
-        quality = String(quality).trim();
-
-        if (!QUALITIES.includes(quality)) {
-            return reply(
-                '❌ වැරදි Quality එකක්.\n\n' +
-                '360, 480, 720 හෝ 1080 ලෙස පිළිතුරු දෙන්න.'
-            );
+            throw new Error('SASA_API_KEY GitHub Secret එක සකස් කර නැහැ.');
         }
 
         await conn.sendMessage(from, {
-            react: { text: '⏳', key: mek.key }
+            react: { text: '⬇️', key: mek.key }
         }).catch(() => {});
 
-        await reply(
-            '⏳ *VIDEO DOWNLOADING...*\n\n' +
-            `📺 Quality: ${quality}p\n` +
-            '📁 Format: MP4\n' +
-            'කරුණාකර රැඳී සිටින්න.\n\n' +
-            FOOTER
+        await conn.sendMessage(
+            from,
+            {
+                text:
+                    '╭━━〔 *ᴛʜᴇɴᴜᴠᴀ x ᴍᴅ* 〕━━╮\n' +
+                    '┃ 🎬 *VIDEO DOWNLOADER*\n' +
+                    '┣━━━━━━━━━━━━━━━━━━╯\n' +
+                    `┃ 📌 ${video.title || 'YouTube Video'}\n` +
+                    '┃\n' +
+                    '┃ ⏳ වීඩියෝව Download කරමින් පවතී...\n' +
+                    `┃ 📺 Quality: ${QUALITY}p\n` +
+                    '┃ 📁 Format: MP4\n' +
+                    '┣━━━━━━━━━━━━━━━━━━╯\n' +
+                    FOOTER
+            },
+            { quoted: mek }
         );
 
         const requestUrl = new URL(API_URL);
         requestUrl.searchParams.set('apikey', SASA_API_KEY);
-        requestUrl.searchParams.set('url', selected.url);
-        requestUrl.searchParams.set('quality', quality);
+        requestUrl.searchParams.set('url', video.url);
+        requestUrl.searchParams.set('quality', QUALITY);
         requestUrl.searchParams.set('raw', '1');
 
         const response = await fetch(requestUrl, {
@@ -145,19 +95,17 @@ async function downloadVideo(conn, mek, from, reply, quality) {
             redirect: 'follow',
             signal: AbortSignal.timeout(TIMEOUT),
             headers: {
-                Accept: 'video/mp4, application/octet-stream, application/json'
+                Accept: 'video/mp4, application/octet-stream'
             }
         });
 
         if (!response.ok) {
-            const errorText = await response.text().catch(() => '');
-
+            const details = await response.text().catch(() => '');
             console.error(
                 '[SASA VIDEO API]',
                 response.status,
-                errorText.slice(0, 500)
+                details.slice(0, 500)
             );
-
             throw new Error(`API_HTTP_${response.status}`);
         }
 
@@ -166,20 +114,13 @@ async function downloadVideo(conn, mek, from, reply, quality) {
         ).toLowerCase();
 
         if (
-            contentType.includes('text/html') ||
             contentType.includes('application/json') ||
+            contentType.includes('text/html') ||
             contentType.includes('text/plain')
         ) {
-            const body = await response.text().catch(() => '');
-
-            console.error(
-                '[SASA API RESPONSE]',
-                body.slice(0, 1000)
-            );
-
-            throw new Error(
-                'API එක MP4 ගොනුවක් වෙනුවට Text/JSON ප්‍රතිචාරයක් ලබා දුන්නා.'
-            );
+            const details = await response.text().catch(() => '');
+            console.error('[SASA API RESPONSE]', details.slice(0, 1000));
+            throw new Error('API එකෙන් සෘජු MP4 ගොනුවක් ලැබුණේ නැහැ.');
         }
 
         if (
@@ -222,10 +163,7 @@ async function downloadVideo(conn, mek, from, reply, quality) {
         });
 
         try {
-            await pipeline(
-                source,
-                fs.createWriteStream(tempFile)
-            );
+            await pipeline(source, fs.createWriteStream(tempFile));
         } catch (error) {
             if (
                 error.message === 'FILE_TOO_LARGE' ||
@@ -233,7 +171,6 @@ async function downloadVideo(conn, mek, from, reply, quality) {
             ) {
                 throw new Error('FILE_TOO_LARGE');
             }
-
             throw error;
         }
 
@@ -247,14 +184,11 @@ async function downloadVideo(conn, mek, from, reply, quality) {
             throw new Error('FILE_TOO_LARGE');
         }
 
-        // Check that the downloaded file has an MP4 signature.
         const fileHandle = await fs.promises.open(tempFile, 'r');
 
         try {
             const header = Buffer.alloc(12);
-            const { bytesRead } = await fileHandle.read(
-                header, 0, 12, 0
-            );
+            const { bytesRead } = await fileHandle.read(header, 0, 12, 0);
 
             if (
                 bytesRead < 8 ||
@@ -266,18 +200,7 @@ async function downloadVideo(conn, mek, from, reply, quality) {
             await fileHandle.close();
         }
 
-        const title = safeFileName(selected.title);
-
-        const caption =
-            '╭━━〔 *ᴅᴏᴡɴʟᴏᴀᴅ sᴜᴄᴄᴇss* 〕━━╮\n' +
-            `┃ 🎬 *${title}*\n` +
-            '┣━━━━━━━━━━━━━━━━━━╯\n' +
-            `┃ 📺 Quality: ${quality}p\n` +
-            '┃ 📁 Format: MP4\n' +
-            `┃ 📦 Size: ${(fileInfo.size / (1024 * 1024)).toFixed(1)} MB\n` +
-            '┃ ✅ Download complete\n' +
-            '┣━━━━━━━━━━━━━━━━━━╯\n' +
-            FOOTER;
+        const title = safeFileName(video.title);
 
         await conn.sendMessage(
             from,
@@ -285,12 +208,18 @@ async function downloadVideo(conn, mek, from, reply, quality) {
                 video: { url: tempFile },
                 mimetype: 'video/mp4',
                 fileName: `${title}.mp4`,
-                caption
+                caption:
+                    '╭━━〔 *ᴅᴏᴡɴʟᴏᴀᴅ sᴜᴄᴄᴇss* 〕━━╮\n' +
+                    `┃ 🎬 *${title}*\n` +
+                    '┣━━━━━━━━━━━━━━━━━━╯\n' +
+                    `┃ 📺 Quality: ${QUALITY}p\n` +
+                    `┃ 📦 Size: ${(fileInfo.size / (1024 * 1024)).toFixed(1)} MB\n` +
+                    '┃ ✅ Download complete\n' +
+                    '┣━━━━━━━━━━━━━━━━━━╯\n' +
+                    FOOTER
             },
             { quoted: mek }
         );
-
-        pendingVideos.delete(from);
 
         await conn.sendMessage(from, {
             react: { text: '✅', key: mek.key }
@@ -298,40 +227,50 @@ async function downloadVideo(conn, mek, from, reply, quality) {
 
     } catch (error) {
         console.error(
-            '[VIDEO DOWNLOAD ERROR]',
+            '[THENUVA VIDEO ERROR]',
             error.stack || error.message
         );
-
-        await conn.sendMessage(from, {
-            react: { text: '❌', key: mek.key }
-        }).catch(() => {});
 
         let message = error.message || 'Unknown error';
 
         if (message === 'FILE_TOO_LARGE') {
             message = 'වීඩියෝව 512 MB සීමාව ඉක්මවා ඇත.';
-        } else if (message === 'EMPTY_RESPONSE' || message === 'EMPTY_FILE') {
+        } else if (
+            message === 'EMPTY_RESPONSE' ||
+            message === 'EMPTY_FILE'
+        ) {
             message = 'API එකෙන් වීඩියෝ ගොනුවක් ලැබුණේ නැහැ.';
         } else if (message === 'INVALID_MP4') {
-            message = 'API ප්‍රතිචාරය වලංගු MP4 වීඩියෝවක් නොවේ.';
+            message = 'API ප්‍රතිචාරය වලංගු MP4 ගොනුවක් නොවේ.';
         } else if (/API_HTTP_401|API_HTTP_403/.test(message)) {
-            message = 'API key එක හෝ API access එක පරීක්ෂා කරන්න.';
+            message = 'SASA API key එක හෝ API access එක පරීක්ෂා කරන්න.';
         } else if (/API_HTTP_429/.test(message)) {
-            message = 'API requests සීමාව ඉක්මවා ඇත. පසුව උත්සාහ කරන්න.';
+            message = 'API request සීමාව ඉක්මවා ඇත. පසුව උත්සාහ කරන්න.';
         } else if (/API_HTTP_5\d\d/.test(message)) {
-            message = 'Sasa API server එකේ දෝෂයක්. පසුව උත්සාහ කරන්න.';
+            message = 'SASA API server එකේ දෝෂයක්. පසුව උත්සාහ කරන්න.';
         } else if (/AbortError|TimeoutError/i.test(message)) {
             message = 'Download එකට වැඩි වේලාවක් ගත වුණා. නැවත උත්සාහ කරන්න.';
         }
 
-        return reply(
-            '╭━━〔 *ᴅᴏᴡɴʟᴏᴀᴅ ғᴀɪʟᴇᴅ* 〕━━╮\n' +
-            `┃ ❌ ${message}\n` +
-            '┣━━━━━━━━━━━━━━━━━━╯\n' +
-            FOOTER
-        );
+        await conn.sendMessage(
+            from,
+            {
+                text:
+                    '╭━━〔 *ᴅᴏᴡɴʟᴏᴀᴅ ғᴀɪʟᴇᴅ* 〕━━╮\n' +
+                    `┃ ❌ ${message}\n` +
+                    '┣━━━━━━━━━━━━━━━━━━╯\n' +
+                    FOOTER
+            },
+            { quoted: mek }
+        ).catch(() => {});
+
+        await conn.sendMessage(from, {
+            react: { text: '❌', key: mek.key }
+        }).catch(() => {});
 
     } finally {
+        activeDownloads.delete(from);
+
         if (tempDir) {
             await fs.promises.rm(tempDir, {
                 recursive: true,
@@ -343,167 +282,90 @@ async function downloadVideo(conn, mek, from, reply, quality) {
     }
 }
 
-function registerVideoListener(conn) {
-    if (!conn?.ev || registeredListeners.has(conn)) {
-        return;
-    }
-
-    registeredListeners.add(conn);
-
-    conn.ev.on('messages.upsert', async ({ messages }) => {
-        for (const incoming of messages || []) {
-            try {
-                if (!incoming?.message || incoming.key?.fromMe) {
-                    continue;
-                }
-
-                const from = incoming.key?.remoteJid;
-
-                if (!from) continue;
-
-                const text = getMessageText(incoming);
-                if (!text) continue;
-
-                // Handle a quality reply for the previously selected video.
-                const quality = text.match(/^(360|480|720|1080)p?$/i);
-
-                if (quality && pendingVideos.has(from)) {
-                    const selectedQuality = quality[1];
-
-                    await downloadVideo(
-                        conn,
-                        incoming,
-                        from,
-                        message => conn.sendMessage(
-                            from,
-                            { text: message },
-                            { quoted: incoming }
-                        ),
-                        selectedQuality
-                    );
-
-                    continue;
-                }
-
-                // Handle a video search name after the user sends `.video`.
-                if (!pendingVideoNames.has(from)) {
-                    continue;
-                }
-
-                if (text.startsWith('.')) {
-                    continue;
-                }
-
-                pendingVideoNames.delete(from);
-
-                await conn.sendMessage(from, {
-                    react: { text: '🔎', key: incoming.key }
-                }).catch(() => {});
-
-                const search = await yts(text);
-                const video = search?.videos?.[0];
-
-                if (!video?.url) {
-                    await conn.sendMessage(
-                        from,
-                        {
-                            text:
-                                '❌ YouTube වීඩියෝවක් හමු වුණේ නැහැ.\n' +
-                                'නැවත `.video` යවලා උත්සාහ කරන්න.\n\n' +
-                                FOOTER
-                        },
-                        { quoted: incoming }
-                    );
-
-                    continue;
-                }
-
-                await sendQualityMenu(
-                    conn,
-                    from,
-                    incoming,
-                    {
-                        url: video.url,
-                        title: video.title
-                    }
-                );
-
-            } catch (error) {
-                console.error(
-                    '[VIDEO MESSAGE LISTENER ERROR]',
-                    error.stack || error.message
-                );
-            }
-        }
-    });
-}
-
 cmd({
     pattern: 'video',
     alias: ['ytmp4', 'ytvideo'],
     react: '🎬',
-    desc: 'Search and download YouTube videos',
+    desc: 'Download a YouTube video directly',
     category: 'download',
     filename: __filename
-}, async (conn, mek, m, { from, args, reply }) => {
-    registerVideoListener(conn);
-
-    const input = args.join(' ').trim();
-
-    if (!input) {
-        pendingVideoNames.set(from, true);
-
-        return reply(
-            '╭━━〔 *ᴛʜᴇɴᴜᴠᴀ x ᴍᴅ* 〕━━╮\n' +
-            '┃ 🎬 *VIDEO DOWNLOADER*\n' +
-            '┣━━━━━━━━━━━━━━━━━━╯\n' +
-            '┃\n' +
-            '┃ YouTube වීඩියෝ නම එවන්න.\n' +
-            '┃ උදා: `.video Sanda Mithuri`\n' +
-            '┃\n' +
-            '┃ නැත්නම් URL එකත් එක්ක යවන්න:\n' +
-            '┃ `.video https://youtu.be/...`\n' +
-            '┣━━━━━━━━━━━━━━━━━━╯\n' +
-            FOOTER
-        );
-    }
-
+}, async (conn, mek, m, { from, args }) => {
     try {
+        const input = args.join(' ').trim();
+
+        if (!input) {
+            return conn.sendMessage(
+                from,
+                {
+                    text:
+                        '╭━━〔 *ᴛʜᴇɴᴜᴠᴀ x ᴍᴅ* 〕━━╮\n' +
+                        '┃ 🎬 *VIDEO DOWNLOADER*\n' +
+                        '┣━━━━━━━━━━━━━━━━━━╯\n' +
+                        '┃ භාවිතය:\n' +
+                        '┃ `.video වීඩියෝ නම`\n' +
+                        '┃ `.video YouTube URL`\n' +
+                        '┃\n' +
+                        '┃ උදා: `.video Sanda Mithuri`\n' +
+                        '┣━━━━━━━━━━━━━━━━━━╯\n' +
+                        FOOTER
+                },
+                { quoted: mek }
+            );
+        }
+
+        if (activeDownloads.has(from)) {
+            return conn.sendMessage(
+                from,
+                { text: '⏳ Download එකක් දැනටමත් සිදුවෙමින් පවතී.' },
+                { quoted: mek }
+            );
+        }
+
         await conn.sendMessage(from, {
             react: { text: '🔎', key: mek.key }
         }).catch(() => {});
 
-        const video = isYouTubeUrl(input)
-            ? { url: input, title: 'YouTube Video' }
-            : (await yts(input))?.videos?.[0];
+        let video;
+
+        if (isYouTubeUrl(input)) {
+            video = {
+                url: input,
+                title: 'YouTube Video'
+            };
+        } else {
+            const search = await yts(input);
+            video = search?.videos?.[0];
+        }
 
         if (!video?.url) {
-            return reply(
-                '❌ ඒ නමට ගැළපෙන YouTube වීඩියෝවක් හමු වුණේ නැහැ.\n\n' +
-                FOOTER
+            return conn.sendMessage(
+                from,
+                {
+                    text:
+                        '❌ ඒ නමට ගැළපෙන YouTube වීඩියෝවක් හමු වුණේ නැහැ.\n\n' +
+                        FOOTER
+                },
+                { quoted: mek }
             );
         }
 
-        return sendQualityMenu(
-            conn,
-            from,
-            mek,
-            {
-                url: video.url,
-                title: video.title || 'YouTube Video'
-            }
-        );
+        return downloadAndSend(conn, mek, from, video);
 
     } catch (error) {
         console.error(
-            '[VIDEO SEARCH ERROR]',
+            '[VIDEO COMMAND ERROR]',
             error.stack || error.message
         );
 
-        return reply(
-            '❌ Video search එක අසාර්ථකයි.\n' +
-            `${error.message || 'Unknown error'}\n\n` +
-            FOOTER
-        );
+        return conn.sendMessage(
+            from,
+            {
+                text:
+                    '❌ Video search/download එක අසාර්ථකයි.\n' +
+                    `${error.message || 'Unknown error'}\n\n` +
+                    FOOTER
+            },
+            { quoted: mek }
+        ).catch(() => {});
     }
 });

@@ -1,4 +1,3 @@
-const { sendPluginButtons } = require('../lib/buttons');
 const { cmd, commands } = require("../command");
 const getFbVideoInfo = require("@xaviabot/fb-downloader");
 

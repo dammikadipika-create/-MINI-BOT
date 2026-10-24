@@ -1,94 +1,160 @@
-const { cmd, commands } = require("../command");
+const { cmd } = require("../command");
 const getFbVideoInfo = require("@xaviabot/fb-downloader");
+
+const BOT_NAME = "NIKKA X MD";
+const OWNER_NAME = "Dilshan Ashinsa";
+
+const NEWSLETTER_JID = "120363403804248705@newsletter";
+const NEWSLETTER_NAME = "NIKKA X MD";
 
 cmd(
   {
     pattern: "fb",
     alias: ["facebook", "fbdl"],
     react: "📥",
-    desc: "Download Facebook Videos in HD/SD quality effortlessly.",
+    desc: "Download Facebook videos in HD/SD quality.",
     category: "download",
     filename: __filename,
   },
-  async (danuwa, mek, m, { from, quoted, body, args, q, pushname, reply }) => {
+
+  async (conn, mek, m, { from, q, pushname, reply }) => {
+    let loadingMsg;
+
     try {
-      // JID එක නිවැරදිව ලබා ගැනීම
-      const targetJid = typeof from === 'string' ? from : (mek.key.remoteJid || String(from));
+      const targetJid =
+        typeof from === "string"
+          ? from
+          : mek?.key?.remoteJid;
 
-      // 1. ලින්ක් එක ලබා දී ඇත්දැයි සහ එය නිවැරදිදැයි පරීක්ෂා කිරීම
+      // Check URL
       if (!q) {
-        await sendPluginButtons(danuwa, from, 'fb', mek);
-        return reply("⚠️ *කරුණාකර වලංගු Facebook වීඩියෝ ලින්ක් එකක් ඇතුළත් කරන්න!* \n_Example: .fb https://facebook.com..._");
+        return reply(
+          "╭━━〔 📥 ɴɪᴋᴋᴀ x ᴍᴅ 〕━━➤\n" +
+          "│\n" +
+          "│ ⚠️ *ғᴀᴄᴇʙᴏᴏᴋ ᴜʀʟ ʀᴇǫᴜɪʀᴇᴅ!*\n" +
+          "│\n" +
+          "│ ➤ ᴜsᴀɢᴇ:\n" +
+          "│ ➥ .fb https://facebook.com/...\n" +
+          "│\n" +
+          "╰━━━━━━━━━━━━━━━━━━➤"
+        );
       }
 
-      const fbRegex = /(https?:\/\/)?(www\.)?(facebook|fb)\.com\/.+/;
-      if (!fbRegex.test(q)) {
-        return reply("❌ *වැරදි ලින්ක් එකක්! කරුණාකර නැවත පරීක්ෂා කර උත්සාහ කරන්න.*");
+      const fbRegex =
+        /^(https?:\/\/)?(www\.|m\.|web\.)?(facebook\.com|fb\.watch)\/.+/i;
+
+      if (!fbRegex.test(q.trim())) {
+        return reply(
+          "╭━━〔 ❌ ɪɴᴠᴀʟɪᴅ ᴜʀʟ 〕━━➤\n\n" +
+          "➤ කරුණාකර නිවැරදි Facebook video link එකක් එවන්න.\n\n" +
+          "╰━━━━━━〔 ɴɪᴋᴋᴀ x ᴍᴅ 〕━━➤"
+        );
       }
 
-      // 2. දත්ත ලබා ගන්නා තෙක් 'Loading' පණිවිඩය යැවීම
-      const loadingMsg = await danuwa.sendMessage(targetJid, { 
-        text: `⚡ *CYBER THENUWA FETCHING DATA...*` 
-      }, { quoted: mek });
+      // Loading message
+      loadingMsg = await conn.sendMessage(
+        targetJid,
+        {
+          text:
+            "╭━━〔 ⚡ ɴɪᴋᴋᴀ x ᴍᴅ 〕━━➤\n" +
+            "│\n" +
+            "│ 🔄 *ғᴇᴛᴄʜɪɴɢ ᴠɪᴅᴇᴏ ᴅᴀᴛᴀ...*\n" +
+            "│ ➥ ᴘʟᴇᴀsᴇ ᴡᴀɪᴛ\n" +
+            "│\n" +
+            "╰━━━━━━━━━━━━━━━━━━➤",
+        },
+        { quoted: mek }
+      );
 
-      // 3. API මඟින් වීඩියෝ තොරතුරු ලබා ගැනීම
-      const videoData = await getFbVideoInfo(q);
+      // Get video information
+      const videoData = await getFbVideoInfo(q.trim());
+
       if (!videoData || (!videoData.sd && !videoData.hd)) {
-        return await danuwa.sendMessage(targetJid, { 
-          text: "❌ *වීඩියෝව බාගත කිරීමට නොහැකි විය. මෙය පුද්ගලික (Private) වීඩියෝවක් හෝ කැඩුණු ලින්ක් එකක් විය හැක.*", 
-          edit: loadingMsg.key 
+        await conn.sendMessage(targetJid, {
+          text:
+            "╭━━〔 ❌ ᴅᴏᴡɴʟᴏᴀᴅ ғᴀɪʟᴇᴅ 〕━━➤\n\n" +
+            "➤ වීඩියෝ link එක ලබාගත නොහැක.\n" +
+            "➥ වීඩියෝව private විය හැකියි, නැත්නම් link එක වැරදි විය හැකියි.\n\n" +
+            "╰━━━━━━〔 ɴɪᴋᴋᴀ x ᴍᴅ 〕━━➤",
+          edit: loadingMsg.key,
         });
+
+        return;
       }
 
       const { title, sd, hd } = videoData;
-      
-      // pushname එක Welcome සෙක්ෂන් එකට එකතු කර සකස් කළ විස්තර පත්‍රිකාව
-      let detailsText = `👋 HELLOW ${pushname || "User"} ❤️ Welcome to\n`;
-      detailsText += `ɴɪᴋᴋᴀ x ᴍᴅ •\n\n`;
-      detailsText += `✅NIKKA X MD✅\n`;
-      detailsText += `╭───────────────────.★*\n`;
-      detailsText += `│  ◦ 📝 *Title :* ${title || "Facebook Video"}\n`;
-      detailsText += `│  ◦ 🌐 *Url :* ${q}\n`;
-      detailsText += `│  ◦ 🎬 *Quality :* ${hd ? "HD Available" : "SD Only"}\n`;
-      detailsText += `│  ◦ ⚡ *HD [High] :* ${hd ? "✅" : "❌"}\n`;
-      detailsText += `│  ◦ 🖼️ *Standard [Standard] :* ${sd ? "✅" : "❌"}\n`;
-      detailsText += `╰───────────────────.★*\n\n`;
-      detailsText += `╭───────────────╼\n`;
-      detailsText += `│👨‍💻 CYBER-TEAM 🥷\n`;
-      detailsText += `╰───────────────╼\n\n`;
-      detailsText += `📥 *DOWNLOADING VIDEO FILE* 📥\n`;
-      detailsText += `─── ── ─●●●─ ── ───\n\n\n`;
 
-      // විස්තර පණිවිඩය යාවත්කාලීන කිරීම (Baileys නිවැරදි ව්‍යුහය)
-      await danuwa.sendMessage(targetJid, { 
-        text: detailsText,
-        edit: loadingMsg.key,
-        contextInfo: {
-          forwardingScore: 999,
-          isForwarded: true,
-          forwardedNewsletterMessageInfo: {
-            newsletterJid: "120363403804248705@newsletter",
-            newsletterName: "NIKKA production X MD",
-            serverMessageId: 1
-          }
+      // Video details
+      let detailsText = `╭━━━〔 ⚡ ɴɪᴋᴋᴀ x ᴍᴅ 〕━━━➤\n`;
+      detailsText += `│\n`;
+      detailsText += `│ 👋 ʜᴇʟʟᴏ, *${pushname || "User"}* ❤️\n`;
+      detailsText += `│ ➥ ᴡᴇʟᴄᴏᴍᴇ ᴛᴏ ${BOT_NAME}\n`;
+      detailsText += `│\n`;
+      detailsText += `╰━━━━━━━━━━━━━━━━━━➤\n\n`;
+
+      detailsText += `╭━━〔 🎬 ᴠɪᴅᴇᴏ ɪɴғᴏ 〕━━➤\n`;
+      detailsText += `│\n`;
+      detailsText += `│ ➤ 📝 *ᴛɪᴛʟᴇ* : ${title || "Facebook Video"}\n`;
+      detailsText += `│\n`;
+      detailsText += `│ ➥ 🌐 *ᴜʀʟ* : ${q.trim()}\n`;
+      detailsText += `│\n`;
+      detailsText += `│ ➤ 🎞️ *ǫᴜᴀʟɪᴛʏ* : ${hd ? "ʜᴅ ᴀᴠᴀɪʟᴀʙʟᴇ" : "sᴅ ᴏɴʟʏ"}\n`;
+      detailsText += `│\n`;
+      detailsText += `│ ➥ 🔥 *ʜᴅ ᴍᴏᴅᴇ* : ${hd ? "✅ ᴀᴠᴀɪʟᴀʙʟᴇ" : "❌ ᴜɴᴀᴠᴀɪʟᴀʙʟᴇ"}\n`;
+      detailsText += `│\n`;
+      detailsText += `│ ➤ 🖼️ *sᴅ ᴍᴏᴅᴇ* : ${sd ? "✅ ᴀᴠᴀɪʟᴀʙʟᴇ" : "❌ ᴜɴᴀᴠᴀɪʟᴀʙʟᴇ"}\n`;
+      detailsText += `│\n`;
+      detailsText += `╰━━━━━━━━━━━━━━━━━━➤\n\n`;
+
+      detailsText += `╭━━〔 👨‍💻 ᴄʏʙᴇʀ ᴛᴇᴀᴍ 〕━━➤\n`;
+      detailsText += `│\n`;
+      detailsText += `│ ⚡ ᴘᴏᴡᴇʀᴇᴅ ʙʏ ${BOT_NAME}\n`;
+      detailsText += `│ 👑 ᴏᴡɴᴇʀ : ${OWNER_NAME}\n`;
+      detailsText += `│\n`;
+      detailsText += `╰━━━━━━━━━━━━━━━━━━➤\n\n`;
+
+      detailsText += `╭━━〔 📥 ᴅᴏᴡɴʟᴏᴀᴅ 〕━━➤\n`;
+      detailsText += `│\n`;
+      detailsText += `│ 🔄 ᴘʀᴇᴘᴀʀɪɴɢ ᴠɪᴅᴇᴏ ғɪʟᴇ...\n`;
+      detailsText += `│ ➤ ᴘʟᴇᴀsᴇ ᴡᴀɪᴛ\n`;
+      detailsText += `│\n`;
+      detailsText += `╰━━━━━━➤ ${BOT_NAME} 🚀\n\n`;
+      detailsText += `> © ᴘᴏᴡᴇʀᴇᴅ ʙʏ ${OWNER_NAME}`;
+
+      // Update loading message
+      await conn.sendMessage(
+        targetJid,
+        {
+          text: detailsText,
+          edit: loadingMsg.key,
+          contextInfo: {
+            forwardingScore: 999,
+            isForwarded: true,
+            forwardedNewsletterMessageInfo: {
+              newsletterJid: NEWSLETTER_JID,
+              newsletterName: NEWSLETTER_NAME,
+              serverMessageId: 1,
+            },
+          },
         }
-      });
+      );
 
-      // 4. තත්ත්වයෙන් උසස්ම වීඩියෝ ලින්ක් එක තෝරා ගැනීම
+      // Prefer HD when available
       const downloadUrl = hd || sd;
       const finalQuality = hd ? "HD Quality" : "SD Quality";
 
-      // 5. වීඩියෝ ෆයිල් එක සෘජුවම WhatsApp වෙත අප්ලෝඩ් කිරීමේ Caption එක
-      let videoCaption = `✅ *DOWNLOAD SUCCESS* ✅\n`;
-      videoCaption += `╭───────────────────.★*\n`;
-      videoCaption += `│  ◦ 👤 *User :* ${pushname || "User"}\n`;
-      videoCaption += `│  ◦ 🎞️ *Status :* Successfully Sent\n`;
-      videoCaption += `│  ◦ 🖼️ *Quality :* ${finalQuality}\n`;
-      videoCaption += `╰───────────────────.★*\n\n`;
-      videoCaption += `> ɴɪᴋᴋᴀ x ᴍᴅ • ᴘᴏᴡᴇʀᴇᴅ ʙʏ ɴɪᴋᴋᴀ x ᴍᴅ 🚀\n\n\n`;
+      let videoCaption = `╭━━〔 ✅ ᴅᴏᴡɴʟᴏᴀᴅ sᴜᴄᴄᴇss 〕━━➤\n`;
+      videoCaption += `│\n`;
+      videoCaption += `│ 👤 *ᴜsᴇʀ* : ${pushname || "User"}\n`;
+      videoCaption += `│ 🎬 *sᴛᴀᴛᴜs* : sᴜᴄᴄᴇssғᴜʟʟʏ sᴇɴᴛ\n`;
+      videoCaption += `│ 🎞️ *ǫᴜᴀʟɪᴛʏ* : ${finalQuality}\n`;
+      videoCaption += `│\n`;
+      videoCaption += `╰━━━━━━━━━━━━━━━━━━➤\n\n`;
+      videoCaption += `➤ ᴇɴᴊᴏʏ ʏᴏᴜʀ ᴠɪᴅᴇᴏ! ❤️\n\n`;
+      videoCaption += `> ⚡ ${BOT_NAME} • ᴘᴏᴡᴇʀᴇᴅ ʙʏ ${OWNER_NAME} 🚀`;
 
-      // වීඩියෝ එක යවන විට Newsletter එක පෙන්වීම
-      await danuwa.sendMessage(
+      // Send video
+      await conn.sendMessage(
         targetJid,
         {
           video: { url: downloadUrl },
@@ -97,20 +163,29 @@ cmd(
             forwardingScore: 999,
             isForwarded: true,
             forwardedNewsletterMessageInfo: {
-              newsletterJid: "120363403804248705@newsletter",
-              newsletterName: "NIKKA production X MD",
-              serverMessageId: 1
-            }
-          }
+              newsletterJid: NEWSLETTER_JID,
+              newsletterName: NEWSLETTER_NAME,
+              serverMessageId: 1,
+            },
+          },
         },
         { quoted: mek }
       );
 
-      await sendPluginButtons(danuwa, targetJid, 'fb', mek);
-
     } catch (error) {
-      console.error("FB Downloader Error:", error);
-      reply(`❌ *Error occurred:* ${error.message || error}`);
+      console.error("[NIKKA X MD FB DOWNLOADER ERROR]", error);
+
+      const errorText =
+        `╭━━〔 ❌ ᴇʀʀᴏʀ 〕━━➤\n\n` +
+        `➤ Facebook video එක බාගත කිරීම අසාර්ථකයි.\n` +
+        `➥ ${error.message || "Unknown error"}\n\n` +
+        `> ⚡ ${BOT_NAME}`;
+
+      if (reply) {
+        await reply(errorText);
+      } else if (from) {
+        await conn.sendMessage(from, { text: errorText }, { quoted: mek });
+      }
     }
   }
 );

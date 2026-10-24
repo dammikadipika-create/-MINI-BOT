@@ -177,7 +177,7 @@ cmd(
     '',
     '🎵 _Preparing a random Sinhala remix..._',
     '',
-    '> ɴɪᴋᴋᴀ x ᴍᴅ • ᴘᴏᴡᴇʀᴇᴅ ʙʏ NIKKA x MD'
+    '> ɴɪᴋᴋᴀ x ᴍᴅ • ᴘᴏᴡᴇʀᴇᴅ ʙʏ ɴɪᴋᴋᴀ x ᴍᴅ'
 ].join('\n');
 
             // Send a normal message, with an image if available

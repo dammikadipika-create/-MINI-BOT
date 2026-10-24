@@ -80,7 +80,7 @@ cmd({
             from || remoteJid,
             {
                 image: {
-                    url: 'https://i.ibb.co/qPDNmSY/5cdec1f68264.jpg'
+                    url: 'https://i.ibb.co/67DRMzkf/b5fbf712e8fd.jpg'
                 },
                 caption,
                 contextInfo: {

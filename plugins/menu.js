@@ -1,100 +1,160 @@
-const { cmd, commands } = require('../command');
-const path = require('path');
+const { cmd, commands } = require("../command");
 
-const BOT_NAME = 'NIKKA X MD';
-const FOOTER =
-'> ɴɪᴋᴋᴀ x ᴍᴅ • ᴘᴏᴡᴇʀᴇᴅ ʙʏ ɴɪᴋᴋᴀ x ᴍᴅ';
+const BOT_NAME = "ɴɪᴋᴋᴀ x ᴍᴅ";
+const FOOTER = "ɴɪᴋᴋᴀ x ᴍᴅ • ᴘᴏᴡᴇʀᴇᴅ ʙʏ ɴɪᴋᴋᴀ x ᴍᴅ";
 
-// Public image URL
-const MENU_IMAGE_URL = 'https://i.ibb.co/67DRMzkf/b5fbf712e8fd.jpg';
+const categoryInfo = {
+    main: {
+        title: "ᴍᴀɪɴ ᴍᴇɴᴜ",
+        emoji: "🏠"
+    },
+    owner: {
+        title: "ᴏᴡɴᴇʀ ᴍᴇɴᴜ",
+        emoji: "👑"
+    },
+    download: {
+        title: "ᴅᴏᴡɴʟᴏᴀᴅ ᴍᴇɴᴜ",
+        emoji: "📥"
+    },
+    downloads: {
+        title: "ᴅᴏᴡɴʟᴏᴀᴅ ᴍᴇɴᴜ",
+        emoji: "📥"
+    },
+    search: {
+        title: "sᴇᴀʀᴄʜ ᴍᴇɴᴜ",
+        emoji: "🔎"
+    },
+    group: {
+        title: "ɢʀᴏᴜᴘ ᴍᴇɴᴜ",
+        emoji: "👥"
+    },
+    admin: {
+        title: "ᴀᴅᴍɪɴ ᴍᴇɴᴜ",
+        emoji: "🛡️"
+    },
+    tools: {
+        title: "ᴛᴏᴏʟs ᴍᴇɴᴜ",
+        emoji: "🧰"
+    },
+    ai: {
+        title: "ᴀɪ ᴍᴇɴᴜ",
+        emoji: "🤖"
+    },
+    fun: {
+        title: "ғᴜɴ ᴍᴇɴᴜ",
+        emoji: "🎭"
+    },
+    convert: {
+        title: "ᴄᴏɴᴠᴇʀᴛ ᴍᴇɴᴜ",
+        emoji: "🔄"
+    },
+    other: {
+        title: "ᴏᴛʜᴇʀ ᴍᴇɴᴜ",
+        emoji: "📌"
+    }
+};
 
-function createMenu() {
-const groups = new Map();
+cmd(
+    {
+        pattern: "menu",
+        alias: ["help", "commands"],
+        desc: "Displays all commands by category",
+        category: "main",
+        filename: __filename
+    },
+    async (
+        danuwa,
+        mek,
+        m,
+        { from, reply, pushName }
+    ) => {
+        try {
+            const categories = {};
 
-for (const item of commands) {
-if (!item || typeof item.function !== 'function') continue;
+            // Collect registered commands by category
+            for (const key of Object.keys(commands)) {
+                const data = commands[key];
 
+                if (!data || !data.pattern) continue;
 
-const filename = item.filename
-  ? path.basename(item.filename).replace(/\.js$/i, '')
-  : 'Other';
+                const category = String(
+                    data.category || "other"
+                ).toLowerCase();
 
-const commandName = item.pattern || item.name;
-if (!commandName) continue;
+                if (!categories[category]) {
+                    categories[category] = [];
+                }
 
-if (!groups.has(filename)) groups.set(filename, []);
+                // Prevent duplicate patterns in each category
+                const alreadyExists = categories[category].some(
+                    item => item.pattern === data.pattern
+                );
 
-groups.get(filename).push('.' + String(commandName));
+                if (!alreadyExists) {
+                    categories[category].push({
+                        pattern: data.pattern,
+                        desc: data.desc || "No description"
+                    });
+                }
+            }
 
+            const totalCommands = Object.values(categories)
+                .reduce((total, list) => total + list.length, 0);
 
-}
+            let menuText = `
+╭━━〔 *${BOT_NAME}* 〕━━╮
+┃
+┃ 👋 ʜᴇʟʟᴏ: ${pushName || "User"}
+┃ 🤖 ʙᴏᴛ: ${BOT_NAME}
+┃ 📚 ᴄᴏᴍᴍᴀɴᴅs: ${totalCommands}
+┃ 📂 ᴄᴀᴛᴇɢᴏʀɪᴇs: ${Object.keys(categories).length}
+┃ 🔰 ᴘʀᴇғɪx: .
+┃
+╰━━━━━━━━━━━━━━━━━━╯
 
-let text =
-`╭━━〔 *${BOT_NAME}* 〕━━╮\n` +
-'┃\n' +
-'┃  📋 *ᴄᴏᴍᴍᴀɴᴅ ᴍᴇɴᴜ*\n' +
-'┃  ━━━━━━━━━━━━━\n' +
-`┃  ⚙️ Commands: ${commands.length}\n` +
-'┃\n';
+`;
 
-for (const [name, list] of groups) {
-text += `┃  📂 *${name}*\n`;
+            // Sort categories alphabetically
+            const sortedCategories = Object.keys(categories).sort();
 
+            for (const category of sortedCategories) {
+                const info = categoryInfo[category] || {
+                    title: `${category.toUpperCase()} MENU`,
+                    emoji: "📂"
+                };
 
-for (const command of [...new Set(list)]) {
-  text += `┃  ▸ ${command}\n`;
-}
+                const list = categories[category];
 
-text += '┃\n';
+                // Sort commands alphabetically
+                list.sort((a, b) =>
+                    a.pattern.localeCompare(b.pattern)
+                );
 
+                menuText += `
+╭━━〔 ${info.emoji} *${info.title}* 〕━━
+┃
+`;
 
-}
+                for (const command of list) {
+                    menuText += `┃ ✦ .${command.pattern}\n`;
+                    menuText += `┃   └ ${command.desc}\n`;
+                }
 
-return text + '╰━━━━━━━━━━━━━━╯\n\n' + FOOTER;
-}
+                menuText += `┃\n╰━━━━━━━━━━━━━━━━━━╯\n\n`;
+            }
 
-async function sendMenu(conn, mek, from, reply) {
-try {
-const caption = createMenu();
+            menuText += `
+> ${FOOTER}
+`;
 
+            await reply(menuText.trim());
 
-return await conn.sendMessage(
-  from,
-  {
-    image: { url: MENU_IMAGE_URL },
-    caption
-  },
-  { quoted: mek }
+        } catch (error) {
+            console.error("MENU ERROR:", error);
+
+            await reply(
+                "❌ Menu එක හදද්දී දෝෂයක් ඇති වුණා. නැවත උත්සාහ කරන්න."
+            );
+        }
+    }
 );
-
-
-} catch (error) {
-console.error('[THENUVA MENU ERROR]', error);
-
-
-return reply(`❌ Menu error: ${error.message}\n\n${FOOTER}`);
-
-
-}
-}
-
-cmd({
-pattern: 'menu',
-alias: ['menulist', 'menulistall'],
-react: '📋',
-desc: 'Show complete menu',
-category: 'main',
-filename: __filename
-}, async (conn, mek, m, { from, reply }) => {
-return sendMenu(conn, mek, from, reply);
-});
-
-cmd({
-pattern: 'download',
-alias: ['downloads', 'fullmenu'],
-desc: 'Show complete menu',
-category: 'main',
-filename: __filename
-}, async (conn, mek, m, { from, reply }) => {
-return sendMenu(conn, mek, from, reply);
-});

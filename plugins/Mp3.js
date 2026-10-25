@@ -1,11 +1,15 @@
 const { cmd } = require('../command');
 const yts = require('yt-search');
 
-const API_KEY = 'Sasa_Dev_Api_79346efacb553ec6ee94f2f6453dec8658ec5e7b';
+const API_KEY = process.env.SASA_API_KEY;
 const API_URL = 'https://sasa-dev-api.xyz/api/yt/mp3-dl';
+
 const MAX_SIZE = 64 * 1024 * 1024;
 const TIMEOUT = 300000;
-const FOOTER = '> ɴɪᴋᴋᴀ x ᴍᴅ • ᴘᴏᴡᴇʀᴇഡ് ʙʏ ɴɪᴋᴋᴀ x ᴍᴅ';
+const MAX_RETRIES = 3;
+
+const FOOTER =
+    '> ɴɪᴋᴋᴀ x ᴍᴅ • ᴘᴏᴡᴇʀᴇᴅ ʙʏ ɴɪᴋᴋᴀ x ᴍᴅ';
 
 const activeDownloads = new Set();
 
@@ -16,84 +20,240 @@ function cleanName(value) {
         .slice(0, 100) || 'NIKKA-X-MD';
 }
 
+function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+function getRetryDelay(response, attempt) {
+    const retryAfter = response.headers.get('retry-after');
+
+    if (retryAfter) {
+        const seconds = Number(retryAfter);
+
+        if (Number.isFinite(seconds) && seconds > 0) {
+            return Math.min(seconds * 1000, 180000);
+        }
+
+        const date = Date.parse(retryAfter);
+
+        if (Number.isFinite(date)) {
+            return Math.min(
+                Math.max(date - Date.now(), 1000),
+                180000
+            );
+        }
+    }
+
+    return attempt * 60000;
+}
+
 async function searchSongs(query) {
     const result = await yts(query);
     const videos = result?.videos || [];
-    const unique = new Map();
 
-    for (const item of videos) {
-        if (!item?.videoId || !/^[\w-]{11}$/.test(item.videoId)) {
+    const item = videos.find(video =>
+        video?.videoId &&
+        /^[\w-]{11}$/.test(video.videoId)
+    );
+
+    if (!item) return null;
+
+    return {
+        id: item.videoId,
+        title: cleanName(item.title),
+        url: `https://www.youtube.com/watch?v=${item.videoId}`,
+        author: item.author?.name || 'YouTube',
+        duration: item.timestamp || 'Unknown'
+    };
+}
+
+async function requestSasaApi(videoUrl, quality) {
+    if (!API_KEY) {
+        throw new Error(
+            'SASA_API_KEY GitHub Secret එක සකස් කර නැත.'
+        );
+    }
+
+    const params = new URLSearchParams({
+        apikey: API_KEY,
+        url: videoUrl,
+        quality,
+        raw: 'false'
+    });
+
+    const endpoint = `${API_URL}?${params.toString()}`;
+
+    for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+        const response = await fetch(endpoint, {
+            method: 'GET',
+            headers: {
+                Accept: 'application/json, audio/*, application/octet-stream, */*'
+            },
+            redirect: 'follow',
+            signal: AbortSignal.timeout(TIMEOUT)
+        });
+
+        if (response.status === 429) {
+            const delay = getRetryDelay(response, attempt);
+
+            await response.text().catch(() => '');
+
+            if (attempt === MAX_RETRIES) {
+                throw new Error(
+                    'Sasa Dev API එකේ conversion limit එක ඉක්මවා ඇත (HTTP 429). ටික වේලාවකින් නැවත උත්සාහ කරන්න.'
+                );
+            }
+
+            console.log(
+                `[SASA MP3] HTTP 429. Retry ${attempt + 1}/${MAX_RETRIES} after ${Math.ceil(delay / 1000)} seconds.`
+            );
+
+            await sleep(delay);
             continue;
         }
 
-        if (!unique.has(item.videoId)) {
-            unique.set(item.videoId, {
-                id: item.videoId,
-                title: cleanName(item.title),
-                url: `https://youtube.com{item.videoId}`,
-                author: item.author?.name || 'YouTube',
-                duration: item.timestamp || 'Unknown',
-                savedAt: Date.now()
-            });
+        if (response.status >= 500 && attempt < MAX_RETRIES) {
+            await response.text().catch(() => '');
+            await sleep(attempt * 5000);
+            continue;
         }
 
-        if (unique.size >= 1) break; 
+        if (!response.ok) {
+            const body = await response.text().catch(() => '');
+
+            console.error('[SASA MP3 API ERROR]', {
+                status: response.status,
+                body: body.slice(0, 1000)
+            });
+
+            throw new Error(
+                `Sasa API HTTP ${response.status}: ${body.slice(0, 200)}`
+            );
+        }
+
+        return response;
     }
 
-    return [...unique.values()];
+    throw new Error('Sasa API එකට සම්බන්ධ වීමට නොහැකි විය.');
 }
 
-async function getAudioUrlFromApi(videoUrl, qualityValue) {
-    const parsedQuality = parseInt(qualityValue, 10) || 128;
-    const fullUrl = `${API_URL}?apikey=${API_KEY}&url=${encodeURIComponent(videoUrl)}&quality=${parsedQuality}&raw=false`;
-    
-    const response = await fetch(fullUrl, {
+async function downloadAudioDirectly(videoUrl, quality) {
+    const response = await requestSasaApi(videoUrl, quality);
+
+    const contentType = (
+        response.headers.get('content-type') || ''
+    ).toLowerCase();
+
+    let result = {};
+    let downloadUrl;
+
+    if (
+        contentType.includes('application/json') ||
+        contentType.includes('text/json')
+    ) {
+        const data = await response.json();
+
+        if (data?.status === false || data?.success === false) {
+            throw new Error(
+                data.message ||
+                data.error ||
+                'Sasa API request එක අසාර්ථකයි.'
+            );
+        }
+
+        result = data?.result || data?.data || data;
+
+        downloadUrl =
+            result?.download ||
+            result?.downloadUrl ||
+            result?.url;
+
+        if (!downloadUrl) {
+            console.error(
+                '[SASA MP3 RESPONSE]',
+                JSON.stringify(data).slice(0, 1500)
+            );
+
+            throw new Error(
+                data.message ||
+                result?.message ||
+                'API response එකේ download URL එකක් නැහැ.'
+            );
+        }
+    } else {
+        return await readAudioResponse(response);
+    }
+
+    let parsedUrl;
+
+    try {
+        parsedUrl = new URL(downloadUrl);
+    } catch {
+        throw new Error('API එකෙන් ලැබුණු download URL එක වැරදියි.');
+    }
+
+    if (parsedUrl.protocol !== 'https:') {
+        throw new Error('Download URL එක HTTPS විය යුතුයි.');
+    }
+
+    const audioResponse = await fetch(parsedUrl.toString(), {
         method: 'GET',
-        headers: { 
-            'Accept': 'application/json',
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+        headers: {
+            Accept: 'audio/mpeg, audio/*, application/octet-stream, */*'
         },
         redirect: 'follow',
         signal: AbortSignal.timeout(TIMEOUT)
     });
 
-    if (!response.ok) {
-        const errorText = await response.text();
-        console.error('[Sasa API Debug Header]', response.status, errorText);
-        throw new Error(`Sasa API returned HTTP ${response.status}`);
+    if (!audioResponse.ok) {
+        const body = await audioResponse.text().catch(() => '');
+
+        console.error('[SASA CDN ERROR]', {
+            status: audioResponse.status,
+            body: body.slice(0, 500)
+        });
+
+        throw new Error(`Audio CDN HTTP ${audioResponse.status}`);
     }
 
-    const data = await response.json();
-    const downloadUrl = data.result?.download || data.result?.url || data.downloadUrl || data.url || (data.data && data.data.url);
-
-    if (!downloadUrl || typeof downloadUrl !== 'string') {
-        throw new Error(data.error || data.message || 'API did not return a valid download URL.');
+    if (
+        Number(audioResponse.headers.get('content-length') || 0) > MAX_SIZE ||
+        Number(result?.sizeBytes || 0) > MAX_SIZE
+    ) {
+        throw new Error('FILE_TOO_LARGE');
     }
 
-    return downloadUrl;
+    return await readAudioResponse(audioResponse);
 }
 
-async function downloadAudio(url) {
-    const response = await fetch(url, {
-        headers: { 
-            'Accept': 'audio/*, application/octet-stream, */*',
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-        },
-        redirect: 'follow',
-        signal: AbortSignal.timeout(TIMEOUT)
-    });
+async function readAudioResponse(response) {
+    const contentType = (
+        response.headers.get('content-type') || ''
+    ).toLowerCase();
 
-    if (!response.ok) {
-        throw new Error(`Audio hosting server returned HTTP ${response.status}`);
+    if (
+        contentType.includes('application/json') ||
+        contentType.includes('text/html')
+    ) {
+        const body = await response.text().catch(() => '');
+
+        console.error('[SASA INVALID AUDIO RESPONSE]', body.slice(0, 500));
+
+        throw new Error(
+            'Download server එකෙන් audio වෙනුවට error response එකක් ලැබුණා.'
+        );
     }
 
-    const declaredSize = Number(response.headers.get('content-length') || 0);
+    const declaredSize = Number(
+        response.headers.get('content-length') || 0
+    );
+
     if (declaredSize > MAX_SIZE) {
         throw new Error('FILE_TOO_LARGE');
     }
 
     if (!response.body) {
-        throw new Error('Empty audio response body.');
+        throw new Error('Audio stream එකක් ලැබුණේ නැහැ.');
     }
 
     const chunks = [];
@@ -104,84 +264,106 @@ async function downloadAudio(url) {
         totalSize += buffer.length;
 
         if (totalSize > MAX_SIZE) {
-            try { await response.body.cancel(); } catch {}
+            try {
+                await response.body.cancel();
+            } catch {}
+
             throw new Error('FILE_TOO_LARGE');
         }
+
         chunks.push(buffer);
     }
 
-    return Buffer.concat(chunks);
+    const audio = Buffer.concat(chunks);
+
+    if (!audio.length) {
+        throw new Error('Downloaded audio file එක හිස්.');
+    }
+
+    return audio;
 }
 
 cmd({
     pattern: 'mp3',
     alias: ['song', 'ytaudio', 'ytmp3'],
     react: '🎵',
-    desc: 'Search songs and download MP3 with AI generated badge',
+    desc: 'Search and download YouTube MP3',
     category: 'download',
     filename: __filename
 }, async (conn, mek, m, { from, args, reply }) => {
-    let fullInput = (args || []).join(' ').trim();
+    const fullInput = (args || []).join(' ').trim();
 
     if (!fullInput) {
         return reply(
             '🎧 *YouTube MP3 Downloader*\n\n' +
-            'Song එකේ නම සමඟ quality එක ඇතුළත් කරන්න.\n' +
-            'Example: *.mp3 Shape of You | 320*'
+            'ගීතයේ නම සමඟ quality එක ලබා දෙන්න.\n\n' +
+            'Example: *.mp3 Shape of You*\n' +
+            'Example: *.mp3 Shape of You | 128*\n' +
+            'Example: *.mp3 Shape of You | 320*\n\n' +
+            'Default quality: 128kbps\n\n' +
+            FOOTER
         );
     }
 
     let query = fullInput;
-    let quality = '128'; 
+    let quality = '128';
 
     if (fullInput.includes('|')) {
         const parts = fullInput.split('|');
-        query = parts.trim();
-        const extractedQuality = parts.trim();
-        if (extractedQuality === '320' || extractedQuality === '128') {
-            quality = extractedQuality;
+
+        query = parts.slice(0, -1).join('|').trim();
+
+        const requestedQuality = parts[parts.length - 1].trim();
+
+        if (!['128', '320'].includes(requestedQuality)) {
+            return reply(
+                '❌ Quality එක 128 හෝ 320 ලෙස ලබා දෙන්න.\n' +
+                'Example: *.mp3 Shape of You | 320*'
+            );
         }
+
+        quality = requestedQuality;
+    }
+
+    if (!query) {
+        return reply('❌ ගීතයේ නම ලබා දෙන්න.');
     }
 
     if (activeDownloads.has(from)) {
-        return reply('⏳ Download එකක් දැනට ක්‍රියාත්මකයි. ටිකක් ඉන්න.');
+        return reply(
+            '⏳ මේ chat එකේ download එකක් දැනට ක්‍රියාත්මකයි. ටිකක් ඉන්න.'
+        );
     }
 
     activeDownloads.add(from);
 
     try {
-        const results = await searchSongs(query);
+        const video = await searchSongs(query);
 
-        if (!results || results.length === 0) {
-            activeDownloads.delete(from);
+        if (!video) {
             return reply('❌ ඔබ සෙවූ ගීතය සොයාගත නොහැකි විය.');
         }
 
-        const video = results; 
+        const thumbnail = `https://i.ytimg.com/vi/${video.id}/hqdefault.jpg`;
 
-        // 🟢 ඔබ ඉල්ලූ පරිදි ස්ක්‍රීන්ෂොට් එකේ ඇති නිල "ⓘ AI-generated by..." ලකුණ (Card එක) සහිත මැසේජ් එක යැවීම:
-        await conn.sendMessage(from, {
-            text: `╭━━〔 *ᴍᴘ3 ᴅᴏᴡɴʟᴏᴀᴅ* 〕━━╮\n` +
-                  `┃ 🔍 Title: ${video.title}\n` +
-                  `┃ 👤 Channel: ${video.author}\n` +
-                  `┃ 🕒 Duration: ${video.duration}\n` +
-                  `┃ 🎧 Quality: ${quality}kbps\n` +
-                  `┃ ⏳ Audio එක සකස් කරමින්...\n` +
-                  `╰━━━━━━━━━━━━━━━━━━╯\n` +
-                  FOOTER,
-            contextInfo: {
-                forwardingScore: 1,
-                isForwarded: true,
-                // WhatsApp AI verified parameters
-                verifiedBizName: 'NIKKA-X-MD',
-                bizStatusText: 'AI-generated by NIKKA-X-MD'
-            }
-        }, { quoted: mek });
+await conn.sendMessage(from, {
+    image: { url: thumbnail },
+    caption:
+        '╭━━〔 *ᴍᴘ3 ᴅᴏᴡɴʟᴏᴀᴅ* 〕━━╮\n' +
+        `┃ 🎵 *Title:* ${video.title}\n` +
+        `┃ 👤 *Channel:* ${video.author}\n` +
+        `┃ 🕒 *Duration:* ${video.duration}\n` +
+        `┃ 🎧 *Quality:* ${quality}kbps\n` +
+        '┃ ⏳ *Audio එක සකස් කරමින්...*\n' +
+        '╰━━━━━━━━━━━━━━━━━━╯\n\n' +
+        FOOTER
+}, { quoted: mek });
 
-        const audioUrl = await getAudioUrlFromApi(video.url, quality);
-        const audio = await downloadAudio(audioUrl);
+        const audio = await downloadAudioDirectly(
+            video.url,
+            quality
+        );
 
-        // සින්දුව WhatsApp එකට ලබා දීම
         await conn.sendMessage(from, {
             audio,
             mimetype: 'audio/mpeg',
@@ -191,9 +373,27 @@ cmd({
 
     } catch (error) {
         console.error('[MP3 DOWNLOAD ERROR]', error);
+
+        let reason = String(
+            error.message || 'Unknown error'
+        ).slice(0, 350);
+
+        if (error.message === 'FILE_TOO_LARGE') {
+            reason = 'Audio file එක 64 MB සීමාව ඉක්මවයි.';
+        } else if (
+            error.name === 'TimeoutError' ||
+            error.name === 'AbortError'
+        ) {
+            reason = 'Download එකට වැඩි වෙලාවක් ගියා. නැවත උත්සාහ කරන්න.';
+        }
+
         await conn.sendMessage(from, {
-            text: `❌ *MP3 Download Failed*\n${error.message}\n\n${FOOTER}`
+            text:
+                `❌ *MP3 Download Failed*\n\n` +
+                `${reason}\n\n` +
+                FOOTER
         }, { quoted: mek });
+
     } finally {
         activeDownloads.delete(from);
     }

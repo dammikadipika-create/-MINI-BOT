@@ -147,7 +147,14 @@ cmd(
 > ${FOOTER}
 `;
 
-            await reply(menuText.trim());
+            await danuwa.sendMessage(from, {
+    image: {
+        url: "https://i.ibb.co/67DRMzkf/b5fbf712e8fd.jpg"
+    },
+    caption: menuText.trim()
+}, {
+    quoted: mek
+});
 
         } catch (error) {
             console.error("MENU ERROR:", error);

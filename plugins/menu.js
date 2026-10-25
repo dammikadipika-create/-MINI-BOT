@@ -1,9 +1,9 @@
 const { cmd, commands } = require('../command');
 const path = require('path');
 
-const BOT_NAME = 'THENUVA X MD';
+const BOT_NAME = 'NIKKA X MD';
 const FOOTER =
-'> ᴛʜᴇɴᴜᴠᴀ x ᴍᴅ • ᴘᴏᴡᴇʀᴇᴅ ʙʏ Dilshan Ashinsa';
+'> ɴɪᴋᴋᴀ x ᴍᴅ • ᴘᴏᴡᴇʀᴇᴅ ʙʏ ɴɪᴋᴋᴀ x ᴍᴅ';
 
 // Public image URL
 const MENU_IMAGE_URL = 'https://i.ibb.co/67DRMzkf/b5fbf712e8fd.jpg';

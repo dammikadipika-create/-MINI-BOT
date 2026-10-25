@@ -10,7 +10,7 @@ const FOOTER =
   '> ᴛʜᴇɴᴜᴠᴀ x ᴍᴅ • ᴘᴏᴡᴇʀᴇᴅ ʙʏ Dilshan Ashinsa';
 
 // මෙතනට download කරන්න ඕනෑ image/document එකේ URL එක දාන්න
-const DOWNLOAD_MEDIA_URL = 'https://example.com/your-menu-image.jpg';
+const DOWNLOAD_MEDIA_URL = 'https://i.ibb.co/67DRMzkf/b5fbf712e8fd.jpg';';
 
 function getPluginFiles(dir) {
   let files = [];

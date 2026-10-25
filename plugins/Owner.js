@@ -1,10 +1,10 @@
 const { cmd } = require('../command');
 
 const OWNER_NAME = 'ɴɪᴋᴋᴀ x ᴍᴅ';
-const OWNER_NUMBER = '94772194789';
+const OWNER_NUMBER = '94703270772';
 
 const OWNER_IMAGE_URL =
-'https://i.ibb.co/LXTMV60v/0bade47afdf9.jpg';
+'https://i.ibb.co/67DRMzkf/b5fbf712e8fd.jpg';
 
 cmd(
 {

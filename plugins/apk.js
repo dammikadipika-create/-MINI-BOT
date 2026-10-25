@@ -332,12 +332,12 @@ cmd(
                     mimetype: 'application/vnd.android.package-archive',
                     fileName,
                     caption:
-                        '╭━━〔 *ᴀᴘᴋ ᴅᴏᴡɴʟᴏᴀᴅ ᴄᴏᴍᴘʟᴇᴛᴇ* 〕━━╮\n' +
-                        `┃ 📱 App: ${title}\n` +
-                        `┃ 💾 Size: ${formatSize(buffer.length)}\n` +
-                        '┃ ✅ File එක සූදානම්!\n' +
-                        '╰━━━━━━━━━━━━━━━━━━━━━━╯\n\n' +
-                        FOOTER
+                        
+'╭─〔 *ᴀᴘᴋ ᴄᴏᴍᴘʟᴇᴛᴇ* 〕─╮\n' +
+`│ 📱 ${title}\n` +
+`│ 💾 ${formatSize(buffer.length)}\n` +
+'╰────────────╯\n\n' +
+FOOTER
                 },
                 { quoted: mek }
             );

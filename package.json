@@ -56,6 +56,7 @@
     "yt-dlp-exec": "^1.0.2",
     "@vreden/youtube_scraper": "^1.2.9",
     "@xaviabot/fb-downloader": "^1.0.14",
-    "darksadasyt-anime": "^1.0.0"
+    "darksadasyt-anime": "^1.0.0",
+    "@peculiar/asn1-schema": "2.11.0"
   }
 }

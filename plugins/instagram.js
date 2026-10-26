@@ -10,7 +10,7 @@ cmd({
     pattern: 'instagram',
     alias: ['ig', 'igdl', 'insta'],
     react: '📸',
-    desc: 'Download Instagram photos and videos',
+    desc: 'Download Instagram media',
     category: 'download',
     filename: __filename
 }, async (conn, mek, m, { from, q, reply }) => {
@@ -19,33 +19,27 @@ cmd({
 
         if (!url) {
             return reply(
-                '╭━━〔 📸 INSTAGRAM DOWNLOADER 〕━━╮\n' +
-                '┃\n' +
-                '┃ ❖ භාවිතය:\n' +
-                '┃ .instagram Instagram_Link\n' +
-                '┃\n' +
-                '┃ ❖ උදාහරණය:\n' +
-                '┃ .ig https://www.instagram.com/reel/...\n' +
-                '┃\n' +
-                '╰━━━━━━━━━━━━━━━━━━━━╯\n\n' +
+                '╭─〔 📸 *INSTAGRAM DL* 〕\n' +
+                '│\n' +
+                '│ ▸ *.ig* Instagram_Link\n' +
+                '│ ▸ *.insta* Instagram_Link\n' +
+                '│\n' +
+                '╰──────────\n\n' +
                 FOOTER
             )
         }
 
         if (!/^https?:\/\/(www\.)?instagram\.com\//i.test(url)) {
-            return reply('❌ වලංගු Instagram link එකක් ලබා දෙන්න.')
+            return reply('❌ වලංගු Instagram link එකක් එවන්න.')
         }
 
         const apiKey = process.env.SASA_API_KEY
 
         if (!apiKey) {
-            return reply(
-                '❌ SASA_API_KEY එක සකස් කර නැහැ.\n\n' +
-                'GitHub Secrets වල SASA_API_KEY එක එකතු කරන්න.'
-            )
+            return reply('❌ SASA_API_KEY GitHub Secret එක සකස් කරන්න.')
         }
 
-        await reply('⏳ Instagram media එක ලබාගනිමින් පවතී...')
+        await reply('⏳ *Instagram media ලබාගනිමින්...*')
 
         const response = await axios.get(API_URL, {
             params: {
@@ -58,57 +52,37 @@ cmd({
 
         const data = response.data
 
-        if (
-            !data ||
-            data.status === false ||
-            data.error
-        ) {
+        if (!data || data.status === false || data.error) {
             console.error('Instagram API Error:', data)
-
-            return reply(
-                '❌ Instagram download එක අසාර්ථකයි.\n' +
-                'Link එක පරීක්ෂා කර නැවත උත්සාහ කරන්න.'
-            )
+            return reply('❌ Download අසාර්ථකයි. නැවත උත්සාහ කරන්න.')
         }
 
-        // Extract media links from common API response formats
         const mediaUrls = []
 
         function extractMedia(obj) {
             if (!obj) return
 
             if (typeof obj === 'string') {
-                if (
-                    /^https?:\/\//i.test(obj) &&
-                    /\.(mp4|m4v|mov|jpg|jpeg|png|webp)(\?.*)?$/i.test(obj)
-                ) {
+                if (/^https?:\/\//i.test(obj)) {
                     mediaUrls.push(obj)
                 }
                 return
             }
 
             if (Array.isArray(obj)) {
-                for (const item of obj) {
-                    extractMedia(item)
-                }
+                for (const item of obj) extractMedia(item)
                 return
             }
 
             if (typeof obj === 'object') {
                 for (const [key, value] of Object.entries(obj)) {
-                    const mediaKey =
-                        /^(url|downloadurl|download_url|videourl|video_url|imageurl|image_url|link|src)$/i.test(key)
-
                     if (
-                        mediaKey &&
                         typeof value === 'string' &&
-                        /^https?:\/\//i.test(value)
+                        /^https?:\/\//i.test(value) &&
+                        /url|link|src|download|video|image|media/i.test(key)
                     ) {
                         mediaUrls.push(value)
-                    } else if (
-                        value &&
-                        typeof value === 'object'
-                    ) {
+                    } else if (value && typeof value === 'object') {
                         extractMedia(value)
                     }
                 }
@@ -119,21 +93,17 @@ cmd({
 
         const uniqueUrls = [...new Set(mediaUrls)]
 
-        if (uniqueUrls.length === 0) {
-            console.error(
-                'Instagram API response format:',
-                JSON.stringify(data).slice(0, 3000)
-            )
-
+        if (!uniqueUrls.length) {
+            console.error('Instagram API Response:', JSON.stringify(data))
             return reply(
-                '⚠️ API එකෙන් media link එකක් හඳුනාගන්න බැරි වුණා.\n\n' +
-                'SASA API response format එක පරීක්ෂා කළ යුතුයි.'
+                '⚠️ Media link එක හඳුනාගන්න බැහැ.\n' +
+                'API response format එක පරීක්ෂා කළ යුතුයි.'
             )
         }
 
         for (const mediaUrl of uniqueUrls.slice(0, 5)) {
-            const isImage =
-                /\.(jpg|jpeg|png|webp)(\?.*)?$/i.test(mediaUrl)
+            const cleanUrl = mediaUrl.split('?')[0]
+            const isImage = /\.(jpg|jpeg|png|webp)$/i.test(cleanUrl)
 
             const caption =
                 (isImage ? '📸' : '🎬') +
@@ -167,15 +137,11 @@ cmd({
         )
 
         if (error.response?.status === 401) {
-            return reply('❌ API key එක වැරදියි. SASA API key එක පරීක්ෂා කරන්න.')
-        }
-
-        if (error.code === 'ECONNABORTED') {
-            return reply('⏳ API එකෙන් ප්‍රතිචාර ලැබීමට වැඩි කාලයක් ගත වෙනවා. නැවත උත්සාහ කරන්න.')
+            return reply('❌ API key එක පරීක්ෂා කරන්න.')
         }
 
         return reply(
-            '❌ Instagram download කිරීමේදී දෝෂයක් ඇතිවුණා.\n\n' +
+            '❌ Instagram download කිරීම අසාර්ථකයි.\n\n' +
             FOOTER
         )
     }

@@ -156,7 +156,6 @@ cmd({
             '│ ✅ Google Drive Download\n' +
             '│ 📁 ' + fileName + '\n' +
             '╰──────────────'
-            '> ɴɪᴋᴋᴀ x ᴍᴅ • ᴘᴏᴡᴇʀᴇᴅ ʙʏ ɴɪᴋᴋᴀ x ᴍᴅ;
 
         if (contentType.startsWith('image/')) {
             await conn.sendMessage(from, {

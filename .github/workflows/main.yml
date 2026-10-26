@@ -48,6 +48,7 @@ jobs:
           SASA_API_KEY: ${{ secrets.SASA_API_KEY }}
           SASA_DEV_API_KEY: ${{ secrets.SASA_DEV_API_KEY }}
           SASA_TTS_API_KEY: ${{ secrets.SASA_TTS_API_KEY }}
+          IMGBB_API_KEY: ${{ secrets.IMGBB_API_KEY }}
         run: |
           if [ -z "$SESSION_ID" ]; then
             echo "SESSION_ID is missing"
@@ -73,10 +74,17 @@ jobs:
           fi
           echo "SASA_TTS_API_KEY is set"
 
+          if [ -z "$IMGBB_API_KEY" ]; then
+            echo "IMGBB_API_KEY is missing"
+            exit 1
+          fi
+          echo "IMGBB_API_KEY is set"
+
       - name: Start application
         env:
           SESSION_ID: ${{ secrets.SESSION_ID }}
           SASA_API_KEY: ${{ secrets.SASA_API_KEY }}
           SASA_DEV_API_KEY: ${{ secrets.SASA_DEV_API_KEY }}
           SASA_TTS_API_KEY: ${{ secrets.SASA_TTS_API_KEY }}
+          IMGBB_API_KEY: ${{ secrets.IMGBB_API_KEY }}
         run: node index.js

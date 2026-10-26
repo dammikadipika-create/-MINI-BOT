@@ -47,7 +47,7 @@ cmd({
             return reply('❌ SASA_API_KEY එක සකස් කර නැහැ.')
         }
 
-        await reply('⏳ *ᴛʜᴇɴᴜᴠᴀ x ᴍᴅ*\n\n📥 Google Drive file එක ලබාගන්නවා...')
+        await reply('⏳ *ɴɪᴋᴋᴀ x ᴍᴅ*\n\n📥 Google Drive file එක ලබාගන්නවා...')
 
         const apiResponse = await axios.get(API_URL, {
             params: {
@@ -152,10 +152,11 @@ cmd({
         fileName = fileName.replace(/[\\/:*?"<>|]/g, '_')
 
         const caption =
-            '╭─〔 *ᴛʜᴇɴᴜᴠᴀ x ᴍᴅ* 〕\n' +
+            '╭─〔 *ɴɪᴋᴋᴀ x ᴍᴅ* 〕\n' +
             '│ ✅ Google Drive Download\n' +
             '│ 📁 ' + fileName + '\n' +
             '╰──────────────'
+            '> ɴɪᴋᴋᴀ x ᴍᴅ • ᴘᴏᴡᴇʀᴇᴅ ʙʏ ɴɪᴋᴋᴀ x ᴍᴅ;
 
         if (contentType.startsWith('image/')) {
             await conn.sendMessage(from, {

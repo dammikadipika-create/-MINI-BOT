@@ -38,7 +38,7 @@ cmd({
             return reply('❌ HTTP හෝ HTTPS link එකක් ලබා දෙන්න.')
         }
 
-        await reply('⏳ *ᴛʜᴇɴᴜᴠᴀ x ᴍᴅ*\n\n🎵 Audio එක ලබාගන්නවා...')
+        await reply('⏳ *ɴɪᴋᴋᴀ x ᴍᴅ*\n\n🎵 Audio එක ලබාගන්නවා...')
 
         const { data } = await axios.get(API_URL, {
             params: {

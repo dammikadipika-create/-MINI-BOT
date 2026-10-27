@@ -1,7 +1,7 @@
 const { cmd, commands } = require('../command');
 
 const BOT_NAME = 'ɴɪᴋᴋᴀ x ᴍᴅ';
-const FOOTER = 'ɴɪᴋᴋᴀ x ᴍᴅ • ᴘᴏᴡᴇʀᴇᴅ ʙʏ ɴɪᴋᴋᴀ x ᴍᴅ';
+const FOOTER = 'ᴘᴏᴡᴇʀᴇᴅ ʙʏ ɴɪᴋᴋᴀ x ᴍᴅ';
 
 const categoryInfo = {
     main: { title: 'ᴍᴀɪɴ ᴍᴇɴᴜ', emoji: '🏠' },

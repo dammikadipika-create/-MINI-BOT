@@ -82,7 +82,7 @@ ${config.FOOTER}`;
 
       await robin.sendMessage(
         from,
-        { audio: { url: "" }, mimetype: 'audio/mpeg', ptt: true },
+        { audio: { url: "https://i.ibb.co/Jw3Dyyqz/dec1fcbd941d.jpg" }, mimetype: 'audio/mpeg', ptt: true },
         { quoted: mek }
       );
 

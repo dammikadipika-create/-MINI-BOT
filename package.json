@@ -9,7 +9,6 @@
     "restart": "pm2 restart LUXALGO-MD"
   },
   "dependencies": {
-    "@sasa-dev/void-baileys": "latest",
     "@whiskeysockets/baileys": "latest",
     "@adiwajshing/keyed-db": "^0.2.4",
     "@dark-yasiya/yt-dl.js": "1.0.5",

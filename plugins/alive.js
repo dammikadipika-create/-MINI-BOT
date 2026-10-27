@@ -1,58 +1,37 @@
 const { cmd } = require('../command');
-const config = require('../config');
 const os = require('os');
 const fs = require('fs');
 const path = require('path');
 const { runtime } = require('../lib/functions');
 
-// ========================================
-// THENUVA X MD CONFIG
-// ========================================
+// =====================================
+//          NIKKA X MD ALIVE
+// =====================================
 
-const BOT_NAME = 'THENUVA X MD';
-const OWNER_NAME = 'Dilshan Ashinsa';
+const BOT_NAME = 'NIKKA X MD';
+const OWNER_NAME = 'Nikila Vimoksha';
 const VERSION = 'v2.0.0';
+const prefix = '.';
 
 const ALIVE_IMAGE = 'https://i.ibb.co/Jw3Dyyqz/dec1fcbd941d.jpg';
 
-// Audio file must be in the project root directory.
-const AUDIO_FILE = path.join(
-    process.cwd(),
+const AUDIO_FILE = path.resolve(
+    __dirname,
+    '..',
     'AUD-20261027-WA0000.mp3'
 );
 
-// ========================================
-// SEND CUSTOM AUDIO
-// ========================================
-
-async function sendCustomAudio(conn, from, mek) {
+async function sendAliveAudio(conn, from, mek) {
     try {
         if (!fs.existsSync(AUDIO_FILE)) {
-            console.error(
-                '[ALIVE MUSIC] Audio file not found:',
-                AUDIO_FILE
-            );
-
-            await conn.sendMessage(
-                from,
-                {
-                    text:
-                        '❌ *Audio file not found!*\n\n' +
-                        'Please check that AUD-20261027-WA0000.mp3 ' +
-                        'is uploaded to the project root folder.'
-                },
-                { quoted: mek }
-            );
-
+            console.log('[NIKKA X MD] Audio file not found:', AUDIO_FILE);
             return;
         }
-
-        const audioBuffer = fs.readFileSync(AUDIO_FILE);
 
         await conn.sendMessage(
             from,
             {
-                audio: audioBuffer,
+                audio: fs.readFileSync(AUDIO_FILE),
                 mimetype: 'audio/mpeg',
                 fileName: 'AUD-20261027-WA0000.mp3',
                 ptt: false
@@ -60,127 +39,77 @@ async function sendCustomAudio(conn, from, mek) {
             { quoted: mek }
         );
 
-        console.log(
-            '[ALIVE MUSIC] Custom audio sent successfully.'
-        );
-
+        console.log('[NIKKA X MD] Audio sent successfully.');
     } catch (error) {
-        console.error(
-            '[ALIVE MUSIC ERROR]',
-            error.stack || error.message
-        );
+        console.error('[NIKKA X MD] Audio error:', error);
     }
 }
 
-// ========================================
-// ALIVE COMMAND
-// ========================================
+cmd({
+    pattern: 'alive',
+    alias: ['status', 'runtime', 'uptime'],
+    react: '🟢',
+    desc: 'Check bot online status',
+    category: 'main',
+    filename: __filename
+},
+async (conn, mek, m, { from, pushname, reply }) => {
+    try {
+        const userName = pushname || 'User';
+        const uptime = runtime(process.uptime());
 
-cmd(
-    {
-        pattern: 'alive',
-        alias: ['online', 'status'],
-        react: '🟢',
-        desc: 'Check bot status and send custom audio',
-        category: 'main',
-        filename: __filename
-    },
+        const usedMemory = (
+            process.memoryUsage().rss / 1024 / 1024
+        ).toFixed(2);
 
-    async (conn, mek, m, { from, pushname, reply }) => {
-        try {
-            const userName =
-                pushname ||
-                m?.pushName ||
-                m?.pushname ||
-                'User';
+        const totalMemory = (
+            os.totalmem() / 1024 / 1024 / 1024
+        ).toFixed(2);
 
-            const prefix = config.PREFIX || '.';
+        const statusLines = [
+            `╭━━〔 ⚡ ${BOT_NAME} 〕━━╮`,
+            '',
+            `👋 Hello, *${userName}!* ❤️`,
+            '',
+            '╭─〔 *sᴛᴀᴛᴜs ᴘᴀɴᴇʟ* 〕──●●►',
+            '│',
+            `│ ⏳ *ᴜᴘᴛɪᴍᴇ*   : ${uptime}`,
+            `│ 💾 *ʀᴀᴍ*      : ${usedMemory} MB`,
+            `│ 🖥️ *ᴛᴏᴛᴀʟ ʀᴀᴍ* : ${totalMemory} GB`,
+            `│ ⚙️ *ʜᴏsᴛ*      : ${os.hostname()}`,
+            `│ ⌨️ *ᴘʀᴇғɪx*    : ${prefix}`,
+            `│ 🧬 *ᴠᴇʀsɪᴏɴ*   : ${VERSION}`,
+            `│ 👑 *ᴏᴡɴᴇʀ*     : ${OWNER_NAME}`,
+            '│',
+            '╰─────────────────●●►',
+            '',
+            `> ᴘᴏᴡᴇʀᴇᴅ ʙʏ ${OWNER_NAME}`,
+            `> © ${BOT_NAME}`
+        ];
 
-            const uptime = runtime(process.uptime());
+        const caption = statusLines.join('\n');
 
-            const usedMemory = (
-                process.memoryUsage().rss / 1024 / 1024
-            ).toFixed(2);
-
-            const totalMemory = (
-                os.totalmem() / 1024 / 1024 / 1024
-            ).toFixed(2);
-
-            const aliveText = [
-                `╭━━〔 ⚡ ${BOT_NAME} 〕━━╮`,
-                '',
-                `👋 Hello, *${userName}!* ❤️`,
-                '',
-                '╭─〔 *sᴛᴀᴛᴜs ᴘᴀɴᴇʟ* 〕──●●►',
-                '│',
-                `│ ⏳ *ᴜᴘᴛɪᴍᴇ*   : ${uptime}`,
-                `│ 💾 *ʀᴀᴍ*      : ${usedMemory} MB`,
-                `│ 🖥️ *ᴛᴏᴛᴀʟ ʀᴀᴍ* : ${totalMemory} GB`,
-                `│ ⚙️ *ʜᴏsᴛ*      : ${os.hostname()}`,
-                `│ ⌨️ *ᴘʀᴇғɪx*    : ${prefix}`,
-                `│ 🧬 *ᴠᴇʀsɪᴏɴ*   : ${VERSION}`,
-                `│ 👑 *ᴏᴡɴᴇʀ*     : ${OWNER_NAME}`,
-                '│',
-                '╰─────────────────●●►',
-                '',
-                `✨ *${BOT_NAME} ɪs ʀᴜɴɴɪɴɢ sᴜᴄᴄᴇssғᴜʟʟʏ!*`,
-                '',
-                '🎵 _Sending your saved audio..._',
-                '',
-                `> ${BOT_NAME} • ᴘᴏᴡᴇʀᴇᴅ ʙʏ ${OWNER_NAME}`
-            ].join('\n');
-
-            // Send status image and caption.
-            if (
-                ALIVE_IMAGE &&
-                /^https?:\/\//i.test(ALIVE_IMAGE)
-            ) {
-                try {
-                    await conn.sendMessage(
-                        from,
-                        {
-                            image: { url: ALIVE_IMAGE },
-                            caption: aliveText
-                        },
-                        { quoted: mek }
-                    );
-                } catch (imageError) {
-                    console.error(
-                        '[ALIVE IMAGE ERROR]',
-                        imageError.message
-                    );
-
-                    await reply(aliveText);
-                }
-            } else {
-                await reply(aliveText);
-            }
-
-            // Send the locally uploaded MP3.
-            await sendCustomAudio(conn, from, mek);
-
-        } catch (error) {
-            console.error(
-                '[ALIVE ERROR]',
-                error.stack || error.message
+        if (ALIVE_IMAGE) {
+            await conn.sendMessage(
+                from,
+                {
+                    image: { url: ALIVE_IMAGE },
+                    caption
+                },
+                { quoted: mek }
             );
-
-            try {
-                await conn.sendMessage(
-                    from,
-                    {
-                        text:
-                            '❌ *ALIVE ERROR*\n\n' +
-                            `${error.message || 'Unknown error'}`
-                    },
-                    { quoted: mek }
-                );
-            } catch (sendError) {
-                console.error(
-                    '[ALIVE ERROR REPLY FAILED]',
-                    sendError.message
-                );
-            }
+        } else {
+            await conn.sendMessage(
+                from,
+                { text: caption },
+                { quoted: mek }
+            );
         }
+
+        await sendAliveAudio(conn, from, mek);
+
+    } catch (error) {
+        console.error('[NIKKA X MD] Alive error:', error);
+        await reply('❌ Alive command failed. Please check the logs.');
     }
-);
+});

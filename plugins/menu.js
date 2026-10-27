@@ -82,7 +82,7 @@ ${config.FOOTER}`;
 
       await robin.sendMessage(
         from,
-        { audio: { url: "https://files.catbox.moe/x1tr4y.mp3" }, mimetype: 'audio/mpeg', ptt: true },
+        { audio: { url: "" }, mimetype: 'audio/mpeg', ptt: true },
         { quoted: mek }
       );
 

@@ -1,12 +1,12 @@
 const { cmd } = require('../command');
 const config = require('../config');
 const os = require('os');
+const fs = require('fs');
+const path = require('path');
 const { runtime } = require('../lib/functions');
-const yts = require('yt-search');
-const { ytmp3 } = require('@vreden/youtube_scraper');
 
 // ========================================
-// THENUVA X MD ALIVE CONFIG
+// THENUVA X MD CONFIG
 // ========================================
 
 const BOT_NAME = 'THENUVA X MD';
@@ -15,104 +15,54 @@ const VERSION = 'v2.0.0';
 
 const ALIVE_IMAGE = 'https://i.ibb.co/Jw3Dyyqz/dec1fcbd941d.jpg';
 
-// Sinhala DJ / Remix searches
-const REMIX_SEARCHES = [
-    'RU CHAYA Sinhala DJ remix',
-    'RU CHAYA remix songs',
-    'Sinhala trending remix songs',
-    'Sinhala bass boosted remix',
-    'Sinhala DJ remix 2026'
-];
+// Audio file must be in the project root directory.
+const AUDIO_FILE = path.join(
+    process.cwd(),
+    'AUD-20261027-WA0000.mp3'
+);
 
 // ========================================
-// DURATION HELPER
+// SEND CUSTOM AUDIO
 // ========================================
 
-function durationToSeconds(timestamp) {
-    if (!timestamp || typeof timestamp !== 'string') {
-        return Infinity;
-    }
-
-    const parts = timestamp.split(':').map(Number);
-
-    if (
-        parts.length < 2 ||
-        parts.length > 3 ||
-        parts.some(part => !Number.isFinite(part))
-    ) {
-        return Infinity;
-    }
-
-    return parts.reduce(
-        (total, part) => total * 60 + part,
-        0
-    );
-}
-
-// ========================================
-// SEND RANDOM REMIX AUDIO
-// ========================================
-
-async function sendRandomRemix(conn, from, mek) {
+async function sendCustomAudio(conn, from, mek) {
     try {
-        const query =
-            REMIX_SEARCHES[
-                Math.floor(Math.random() * REMIX_SEARCHES.length)
-            ];
+        if (!fs.existsSync(AUDIO_FILE)) {
+            console.error(
+                '[ALIVE MUSIC] Audio file not found:',
+                AUDIO_FILE
+            );
 
-        console.log(`[ALIVE MUSIC] Searching: ${query}`);
+            await conn.sendMessage(
+                from,
+                {
+                    text:
+                        '❌ *Audio file not found!*\n\n' +
+                        'Please check that AUD-20261027-WA0000.mp3 ' +
+                        'is uploaded to the project root folder.'
+                },
+                { quoted: mek }
+            );
 
-        const search = await yts(query);
-
-        if (!search?.videos?.length) {
-            console.log('[ALIVE MUSIC] No songs found.');
             return;
         }
 
-        const candidates = search.videos
-            .slice(0, 10)
-            .filter(video => {
-                const seconds = durationToSeconds(video.timestamp);
-
-                return (
-                    video.url &&
-                    seconds > 0 &&
-                    seconds <= 1800
-                );
-            });
-
-        if (!candidates.length) {
-            console.log('[ALIVE MUSIC] No suitable remix found.');
-            return;
-        }
-
-        const video =
-            candidates[
-                Math.floor(Math.random() * candidates.length)
-            ];
-
-        console.log(`[ALIVE MUSIC] Selected: ${video.title}`);
-
-        const songData = await ytmp3(video.url, '192');
-        const audioUrl = songData?.download?.url;
-
-        if (!audioUrl) {
-            console.log('[ALIVE MUSIC] MP3 URL unavailable.');
-            return;
-        }
+        const audioBuffer = fs.readFileSync(AUDIO_FILE);
 
         await conn.sendMessage(
             from,
             {
-                audio: { url: audioUrl },
+                audio: audioBuffer,
                 mimetype: 'audio/mpeg',
-                fileName: 'THENUVA-X-MD-RANDOM-REMIX.mp3',
+                fileName: 'AUD-20261027-WA0000.mp3',
                 ptt: false
             },
             { quoted: mek }
         );
 
-        console.log(`[ALIVE MUSIC] Audio sent: ${video.title}`);
+        console.log(
+            '[ALIVE MUSIC] Custom audio sent successfully.'
+        );
 
     } catch (error) {
         console.error(
@@ -131,7 +81,7 @@ cmd(
         pattern: 'alive',
         alias: ['online', 'status'],
         react: '🟢',
-        desc: 'Check bot status and play a random remix',
+        desc: 'Check bot status and send custom audio',
         category: 'main',
         filename: __filename
     },
@@ -157,31 +107,34 @@ cmd(
             ).toFixed(2);
 
             const aliveText = [
-    '╭━━〔 ⚡ ɴɪᴋᴋᴀ x ᴍᴅ 〕━━╮',
-    '',
-    `👋 Hello, *${userName}!* ❤️`,
-    '',
-    '╭─〔 *sᴛᴀᴛᴜs ᴘᴀɴᴇʟ* 〕──●●►',
-    '│',
-    `│ ⏳ *ᴜᴘᴛɪᴍᴇ*  : ${uptime}`,
-    `│ 💾 *ʀᴀᴍ*     : ${usedMemory} MB`,
-    `│ 🖥️ *ᴛᴏᴛᴀʟ ʀᴀᴍ* : ${totalMemory} GB`,
-    `│ ⚙️ *ʜᴏsᴛ*     : ${os.hostname()}`,
-    `│ ⌨️ *ᴘʀᴇғɪx*   : ${prefix}`,
-    `│ 🧬 *ᴠᴇʀsɪᴏɴ*  : ${VERSION}`,
-    `│ 👑 *ᴏᴡɴᴇʀ*    : Nikila vimoksha`,
-    '│',
-    '╰─────────────────●●►',
-    '',
-    '✨ *ɴɪᴋᴋᴀ x ᴍᴅ ɪs ʀᴜɴɴɪɴɢ sᴜᴄᴄᴇssғᴜʟʟʏ!*',
-    '',
-    '🎵 _Preparing a random Sinhala remix..._',
-    '',
-    '> ɴɪᴋᴋᴀ x ᴍᴅ • ᴘᴏᴡᴇʀᴇᴅ ʙʏ ɴɪᴋᴋᴀ x ᴍᴅ'
-].join('\n');
+                `╭━━〔 ⚡ ${BOT_NAME} 〕━━╮`,
+                '',
+                `👋 Hello, *${userName}!* ❤️`,
+                '',
+                '╭─〔 *sᴛᴀᴛᴜs ᴘᴀɴᴇʟ* 〕──●●►',
+                '│',
+                `│ ⏳ *ᴜᴘᴛɪᴍᴇ*   : ${uptime}`,
+                `│ 💾 *ʀᴀᴍ*      : ${usedMemory} MB`,
+                `│ 🖥️ *ᴛᴏᴛᴀʟ ʀᴀᴍ* : ${totalMemory} GB`,
+                `│ ⚙️ *ʜᴏsᴛ*      : ${os.hostname()}`,
+                `│ ⌨️ *ᴘʀᴇғɪx*    : ${prefix}`,
+                `│ 🧬 *ᴠᴇʀsɪᴏɴ*   : ${VERSION}`,
+                `│ 👑 *ᴏᴡɴᴇʀ*     : ${OWNER_NAME}`,
+                '│',
+                '╰─────────────────●●►',
+                '',
+                `✨ *${BOT_NAME} ɪs ʀᴜɴɴɪɴɢ sᴜᴄᴄᴇssғᴜʟʟʏ!*`,
+                '',
+                '🎵 _Sending your saved audio..._',
+                '',
+                `> ${BOT_NAME} • ᴘᴏᴡᴇʀᴇᴅ ʙʏ ${OWNER_NAME}`
+            ].join('\n');
 
-            // Send a normal message, with an image if available
-            if (ALIVE_IMAGE && /^https?:\/\//i.test(ALIVE_IMAGE)) {
+            // Send status image and caption.
+            if (
+                ALIVE_IMAGE &&
+                /^https?:\/\//i.test(ALIVE_IMAGE)
+            ) {
                 try {
                     await conn.sendMessage(
                         from,
@@ -203,8 +156,8 @@ cmd(
                 await reply(aliveText);
             }
 
-            // Send a random remix after the status message
-            await sendRandomRemix(conn, from, mek);
+            // Send the locally uploaded MP3.
+            await sendCustomAudio(conn, from, mek);
 
         } catch (error) {
             console.error(

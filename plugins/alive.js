@@ -66,7 +66,8 @@ async (conn, mek, m, {
             '│',
             '╰─────────────────●●►',
             '',
-            `> © ᴘᴏᴡᴇʀᴇᴅ ʙʏ ${BOT_NAME}`
+            
+            `> © ᴘᴏᴡᴇʀᴇᴅ ʙʏ ɴɪᴋᴋᴀ x ᴍᴅ
         ].join('\n');
 
         // SEND STATUS IMAGE — NO BUTTONS

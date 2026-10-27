@@ -19,7 +19,7 @@ const {
     jidDecode,
     fetchLatestBaileysVersion,
     Browsers
-  } = require('@sasa-dev/void-baileys')
+  } = require('@whiskeysockets/baileys')
   
   
   const l = console.log

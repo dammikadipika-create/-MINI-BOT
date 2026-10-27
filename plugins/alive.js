@@ -13,7 +13,7 @@ const OWNER_NAME = 'NIKKA X MD';
 const VERSION = '3.0.0 BETA';
 const PREFIX = '.';
 
-const ALIVE_IMAGE = 'https://files.catbox.moe/93yy0e.jpeg';
+const ALIVE_IMAGE = 'https://i.ibb.co/Jw3Dyyqz/dec1fcbd941d.jpg';
 
 const AUDIO_FILE = path.resolve(
     __dirname,

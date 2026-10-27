@@ -2,23 +2,56 @@ const { cmd, commands } = require('../command');
 
 const BOT_NAME = 'ɴɪᴋᴋᴀ x ᴍᴅ';
 const FOOTER = '© ᴘᴏᴡᴇʀᴇᴅ ʙʏ ɴɪᴋᴋᴀ x ᴍᴅ';
+const PREFIX = '.';
 
 const categoryInfo = {
-    main: { title: 'ᴍᴀɪɴ ᴍᴇɴᴜ', emoji: '🏠' },
-    owner: { title: 'ᴏᴡɴᴇʀ ᴍᴇɴᴜ', emoji: '👑' },
-    download: { title: 'ᴅᴏᴡɴʟᴏᴀᴅ ᴍᴇɴᴜ', emoji: '📥' },
+    main:      { title: 'ᴍᴀɪɴ ᴍᴇɴᴜ', emoji: '🏠' },
+    owner:     { title: 'ᴏᴡɴᴇʀ ᴍᴇɴᴜ', emoji: '👑' },
+    download:  { title: 'ᴅᴏᴡɴʟᴏᴀᴅ ᴍᴇɴᴜ', emoji: '📥' },
     downloads: { title: 'ᴅᴏᴡɴʟᴏᴀᴅ ᴍᴇɴᴜ', emoji: '📥' },
-    search: { title: 'sᴇᴀʀᴄʜ ᴍᴇɴᴜ', emoji: '🔎' },
-    group: { title: 'ɢʀᴏᴜᴘ ᴍᴇɴᴜ', emoji: '👥' },
-    admin: { title: 'ᴀᴅᴍɪɴ ᴍᴇɴᴜ', emoji: '🛡️' },
-    tools: { title: 'ᴛᴏᴏʟs ᴍᴇɴᴜ', emoji: '🧰' },
-    ai: { title: 'ᴀɪ ᴍᴇɴᴜ', emoji: '🤖' },
-    fun: { title: 'ғᴜɴ ᴍᴇɴᴜ', emoji: '🎭' },
-    convert: { title: 'ᴄᴏɴᴠᴇʀᴛ ᴍᴇɴᴜ', emoji: '🔄' },
-    other: { title: 'ᴏᴛʜᴇʀ ᴍᴇɴᴜ', emoji: '📌' }
+    search:    { title: 'sᴇᴀʀᴄʜ ᴍᴇɴᴜ', emoji: '🔎' },
+    group:     { title: 'ɢʀᴏᴜᴘ ᴍᴇɴᴜ', emoji: '👥' },
+    admin:     { title: 'ᴀᴅᴍɪɴ ᴍᴇɴᴜ', emoji: '🛡️' },
+    tools:     { title: 'ᴛᴏᴏʟs ᴍᴇɴᴜ', emoji: '🧰' },
+    ai:        { title: 'ᴀɪ ᴍᴇɴᴜ', emoji: '🤖' },
+    fun:       { title: 'ғᴜɴ ᴍᴇɴᴜ', emoji: '🎭' },
+    convert:   { title: 'ᴄᴏɴᴠᴇʀᴛ ᴍᴇɴᴜ', emoji: '🔄' },
+    other:     { title: 'ᴏᴛʜᴇʀ ᴍᴇɴᴜ', emoji: '📌' }
 };
 
-// Automatically choose an emoji for new categories too
+const commandEmojiRules = [
+    { match: /alive|status|uptime|runtime/, emoji: '⚡' },
+    { match: /ping|speed|test/, emoji: '🏓' },
+    { match: /menu|help|commands/, emoji: '📜' },
+    { match: /owner|sudo|creator/, emoji: '👑' },
+    { match: /song|mp3|audio|music|play/, emoji: '🎵' },
+    { match: /video|mp4|ytvideo/, emoji: '🎬' },
+    { match: /download|dl|media/, emoji: '📥' },
+    { match: /sticker|take|steal/, emoji: '🪄' },
+    { match: /image|photo|img|wallpaper/, emoji: '🖼️' },
+    { match: /group|member|invite/, emoji: '👥' },
+    { match: /kick|add|promote|demote/, emoji: '🥷' },
+    { match: /ban|mute|unmute|warn/, emoji: '🛡️' },
+    { match: /search|google|wiki|find/, emoji: '🔎' },
+    { match: /ai|gpt|chat|ask/, emoji: '🤖' },
+    { match: /translate|trt|language/, emoji: '🌐' },
+    { match: /weather|forecast/, emoji: '🌦️' },
+    { match: /calc|math|calculate/, emoji: '🧮' },
+    { match: /time|date|calendar/, emoji: '🕒' },
+    { match: /news|headline/, emoji: '📰' },
+    { match: /joke|fun|fact|quote/, emoji: '🎭' },
+    { match: /convert|toaudio|tovideo|tomp3/, emoji: '🔄' },
+    { match: /broadcast|bc|sendall/, emoji: '📢' },
+    { match: /restart|reboot|update/, emoji: '♻️' },
+    { match: /delete|clear|remove/, emoji: '🗑️' },
+    { match: /tag|hidetag|mention/, emoji: '🏷️' },
+    { match: /repo|github|git/, emoji: '🐙' },
+    { match: /contact|number|ownerinfo/, emoji: '📞' },
+    { match: /bug|report|support/, emoji: '🐞' },
+    { match: /game|quiz|guess/, emoji: '🎮' },
+    { match: /lock|unlock|close|open/, emoji: '🔐' }
+];
+
 function getCategoryInfo(category) {
     const key = String(category || 'other').toLowerCase();
 
@@ -28,16 +61,15 @@ function getCategoryInfo(category) {
 
     let emoji = '📂';
 
-    if (/owner|sudo|creator/.test(key)) emoji = '👑';
-    else if (/download|media|video|music|song/.test(key)) emoji = '📥';
-    else if (/search|find|google|wiki/.test(key)) emoji = '🔎';
-    else if (/group|member/.test(key)) emoji = '👥';
+    if (/owner|sudo/.test(key)) emoji = '👑';
+    else if (/download|media|music/.test(key)) emoji = '📥';
+    else if (/search/.test(key)) emoji = '🔎';
+    else if (/group/.test(key)) emoji = '👥';
     else if (/admin|moderation/.test(key)) emoji = '🛡️';
-    else if (/tool|utility|tools/.test(key)) emoji = '🧰';
-    else if (/ai|gpt|artificial/.test(key)) emoji = '🤖';
-    else if (/fun|game|joke/.test(key)) emoji = '🎭';
-    else if (/convert|sticker|image/.test(key)) emoji = '🔄';
-    else if (/main|general|home/.test(key)) emoji = '🏠';
+    else if (/tool|utility/.test(key)) emoji = '🧰';
+    else if (/ai|gpt/.test(key)) emoji = '🤖';
+    else if (/fun|game/.test(key)) emoji = '🎮';
+    else if (/convert|sticker/.test(key)) emoji = '🔄';
 
     return {
         title: `${key.replace(/[-_]/g, ' ').toUpperCase()} MENU`,
@@ -45,139 +77,117 @@ function getCategoryInfo(category) {
     };
 }
 
-// Choose a command emoji automatically
-function getCommandEmoji(command, categoryEmoji) {
-    // Use the command's own reaction emoji when available
-    if (command.react && typeof command.react === 'string') {
-        return command.react;
+function getCommandEmoji(data, categoryEmoji) {
+    if (typeof data.react === 'string' && data.react.trim()) {
+        return data.react.trim();
     }
 
-    const pattern = String(command.pattern || '').toLowerCase();
-    const description = String(command.desc || '').toLowerCase();
-    const text = `${pattern} ${description}`;
+    const text = `${data.pattern || ''} ${data.desc || ''}`.toLowerCase();
 
-    if (/song|mp3|audio|music/.test(text)) return '🎵';
-    if (/video|mp4|youtube|ytmp4/.test(text)) return '🎬';
-    if (/download|dl\b/.test(text)) return '📥';
-    if (/sticker|toimg|photo|image/.test(text)) return '🖼️';
-    if (/owner|sudo|broadcast|restart|update/.test(text)) return '👑';
-    if (/group|kick|add|promote|demote/.test(text)) return '👥';
-    if (/admin|ban|mute|unmute|delete/.test(text)) return '🛡️';
-    if (/search|google|wiki|weather/.test(text)) return '🔎';
-    if (/ai|gpt|chatbot|ask/.test(text)) return '🤖';
-    if (/ping|alive|status|uptime/.test(text)) return '⚡';
-    if (/sticker|convert|toaudio|tovideo/.test(text)) return '🔄';
+    for (const rule of commandEmojiRules) {
+        if (rule.match.test(text)) {
+            return rule.emoji;
+        }
+    }
 
     return categoryEmoji || '✨';
 }
 
-cmd(
-    {
-        pattern: 'menu',
-        alias: ['help', 'commands'],
-        desc: 'Displays all commands by category',
-        category: 'main',
-        filename: __filename
-    },
-    async (danuwa, mek, m, { from, reply, pushName }) => {
-        try {
-            const categories = {};
-            const seenCommands = new Set();
+cmd({
+    pattern: 'menu',
+    alias: ['help', 'commands'],
+    desc: 'Displays all commands by category',
+    category: 'main',
+    filename: __filename
+},
+async (danuwa, mek, m, { from, reply, pushName }) => {
+    try {
+        const categories = {};
+        const seen = new Set();
 
-            // Collect registered commands automatically
-            const commandEntries = Object.values(commands);
+        for (const data of Object.values(commands)) {
+            if (!data || !data.pattern) continue;
 
-            for (const data of commandEntries) {
-                if (!data || !data.pattern) continue;
+            const pattern = String(data.pattern).trim();
+            const uniqueKey = pattern.toLowerCase();
 
-                const pattern = String(data.pattern).trim();
-                if (!pattern) continue;
+            if (!pattern || seen.has(uniqueKey)) continue;
 
-                // Prevent duplicate commands
-                const uniqueKey = pattern.toLowerCase();
+            seen.add(uniqueKey);
 
-                if (seenCommands.has(uniqueKey)) continue;
-                seenCommands.add(uniqueKey);
+            const category = String(data.category || 'other').toLowerCase();
+            const info = getCategoryInfo(category);
 
-                const category = String(
-                    data.category || 'other'
-                ).toLowerCase();
-
-                if (!categories[category]) {
-                    categories[category] = [];
-                }
-
-                const info = getCategoryInfo(category);
-
-                categories[category].push({
-                    pattern,
-                    desc: data.desc || 'No description',
-                    emoji: getCommandEmoji(data, info.emoji)
-                });
+            if (!categories[category]) {
+                categories[category] = [];
             }
 
-            const totalCommands = Object.values(categories)
-                .reduce((total, list) => total + list.length, 0);
-
-            const categoryCount = Object.keys(categories).length;
-
-            let menuText = `
-╭━━〔 *${BOT_NAME}* 〕━━╮
-┃
-┃ 👋 ʜᴇʟʟᴏ: ${pushName || 'User'}
-┃ 🤖 ʙᴏᴛ: ${BOT_NAME}
-┃ 📚 ᴄᴏᴍᴍᴀɴᴅs: ${totalCommands}
-┃ 📂 ᴄᴀᴛᴇɢᴏʀɪᴇs: ${categoryCount}
-┃ 🔰 ᴘʀᴇғɪx: .
-┃
-╰━━━━━━━━━━━━━━━━━━╯
-
-`;
-
-            // Sort categories alphabetically
-            const sortedCategories = Object.keys(categories).sort();
-
-            for (const category of sortedCategories) {
-                const info = getCategoryInfo(category);
-                const list = categories[category];
-
-                // Sort commands alphabetically
-                list.sort((a, b) =>
-                    a.pattern.localeCompare(b.pattern)
-                );
-
-                menuText += `
-╭━━〔 ${info.emoji} *${info.title}* 〕━━
-┃
-`;
-
-                for (const command of list) {
-                    menuText += `┃ ${command.emoji} .${command.pattern}\n`;
-                    menuText += `┃   └ ${command.desc}\n`;
-                }
-
-                menuText += `┃\n╰━━━━━━━━━━━━━━━━━━╯\n\n`;
-            }
-
-            menuText += `> ${FOOTER}`;
-
-            await danuwa.sendMessage(
-                from,
-                {
-                    image: {
-                        url: 'https://i.ibb.co/67DRMzkf/b5fbf712e8fd.jpg'
-                    },
-                    caption: menuText.trim()
-                },
-                { quoted: mek }
-            );
-
-        } catch (error) {
-            console.error('[NIKKA X MD] MENU ERROR:', error);
-
-            await reply(
-                '❌ NIKKA X MD menu එක සෑදීමේදී දෝෂයක් ඇති වුණා. Logs පරීක්ෂා කරන්න.'
-            );
+            categories[category].push({
+                pattern,
+                desc: data.desc || 'No description',
+                emoji: getCommandEmoji(data, info.emoji)
+            });
         }
+
+        const totalCommands = Object.values(categories)
+            .reduce((total, list) => total + list.length, 0);
+
+        const sortedCategories = Object.keys(categories).sort();
+
+        // Short bot-name header
+        let menuText = [
+            `╭─〔 *${BOT_NAME}* 〕`,
+            `│ 👋 ${pushName || 'User'}`,
+            `│ 📚 ${totalCommands} Commands`,
+            `│ 🔰 Prefix: ${PREFIX}`,
+            '╰────────●●►',
+            ''
+        ].join('\n');
+
+        // Command categories
+        for (const category of sortedCategories) {
+            const info = getCategoryInfo(category);
+
+            const list = categories[category].sort((a, b) =>
+                a.pattern.localeCompare(b.pattern)
+            );
+
+            menuText += [
+                `╭─〔 ${info.emoji} *${info.title}* 〕`,
+                '│',
+                ...list.flatMap(command => [
+                    `│ ${command.emoji} *${PREFIX}${command.pattern}*`,
+                    `│   ↳ ${command.desc}`,
+                    '│'
+                ]),
+                '╰────────●●►',
+                ''
+            ].join('\n') + '\n';
+        }
+
+        // Footer
+        menuText += [
+            '╭──────────────────╮',
+            `│  ${FOOTER}`,
+            '╰──────────────────╯'
+        ].join('\n');
+
+        await danuwa.sendMessage(
+            from,
+            {
+                image: {
+                    url: 'https://i.ibb.co/67DRMzkf/b5fbf712e8fd.jpg'
+                },
+                caption: menuText.trim()
+            },
+            { quoted: mek }
+        );
+
+    } catch (error) {
+        console.error('[NIKKA X MD] MENU ERROR:', error);
+
+        await reply(
+            '❌ NIKKA X MD menu එක හදද්දී දෝෂයක් ඇති වුණා. Console logs බලන්න.'
+        );
     }
-);
+});

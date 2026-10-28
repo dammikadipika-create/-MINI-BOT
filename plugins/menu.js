@@ -168,16 +168,16 @@ async (danuwa, mek, m, { from, reply, pushName }) => {
 
         // Footer
         menuText += [
-            '╭──────────────────╮',
-            `│  ${FOOTER}`,
-            '╰──────────────────╯'
+            '',
+            `> © ᴘᴏᴡᴇʀᴇᴅ ʙʏ ɴɪᴋᴋᴀ x ᴍᴅ`,
+            ''
         ].join('\n');
 
              await danuwa.sendMessage(
             from,
             {
                 image: {
-                    url: 'https://i.ibb.co/67DRMzkf/b5fbf712e8fd.jpg'
+                    url: 'https://files.catbox.moe/imq304.jpg'
                 },
                 caption: menuText.trim(),
                 contextInfo: {
@@ -185,7 +185,7 @@ async (danuwa, mek, m, { from, reply, pushName }) => {
                     isForwarded: true,
                     forwardedNewsletterMessageInfo: {
                         newsletterJid: '120363430604376029@newsletter',
-                        newsletterName: 'NIKKA X MD',
+                        newsletterName: 'අපේ නික්කා පැට්ටා',
                         serverMessageId: 143
                     }
                 }

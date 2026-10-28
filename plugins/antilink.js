@@ -5,13 +5,9 @@ const { isJidGroup } = require('@whiskeysockets/baileys');
 const BOT_NAME = 'NIKKA X MD';
 const FOOTER = '> ᴘᴏᴡᴇʀᴇᴅ ʙʏ ɴɪᴋᴋᴀ x ᴍᴅ';
 
-// AntiLink settings
 let antiLinkEnabled = true;
-
-// Prevent duplicate listeners on the same connection
 const initializedConnections = new WeakSet();
 
-// Detect common links
 const LINK_REGEX =
     /(?:https?:\/\/|www\.|chat\.whatsapp\.com\/|wa\.me\/|t\.me\/|telegram\.me\/|facebook\.com\/|fb\.me\/|instagram\.com\/|tiktok\.com\/|youtu\.be\/|youtube\.com\/|discord\.gg\/|discord\.com\/invite\/)[^\s]+/i;
 
@@ -76,13 +72,9 @@ function makePanel(title, lines = []) {
     ].join('\n');
 }
 
-async function sendWarning(conn, jid, text, quoted) {
+async function sendWarning(conn, jid, text) {
     try {
-        await conn.sendMessage(
-            jid,
-            { text },
-            quoted ? { quoted } : {}
-        );
+        await conn.sendMessage(jid, { text });
     } catch (error) {
         console.error('[ANTILINK WARNING ERROR]', error);
     }
@@ -129,10 +121,22 @@ async function handleIncomingMessages(conn, messages) {
 
             if (!text || !LINK_REGEX.test(text)) continue;
 
-            // Allow the bot owner
-            if (isOwnerJid(senderJid)) continue;
+            // Owner: warning only; never delete their link message.
+            if (isOwnerJid(senderJid)) {
+                await sendWarning(
+                    conn,
+                    chatJid,
+                    makePanel('OWNER ANTILINK WARNING', [
+                        `👑 *${BOT_NAME} Owner,* link එකක් හඳුනාගත්තා!`,
+                        '⚠️ මේක warning එකක් පමණයි.',
+                        '✅ ඔබගේ message එක delete කරන්නේ නැහැ.'
+                    ])
+                );
 
-            // Allow group admins
+                continue;
+            }
+
+            // Group admins are allowed to post links.
             const senderIsAdmin = await isGroupAdmin(
                 conn,
                 chatJid,
@@ -141,7 +145,7 @@ async function handleIncomingMessages(conn, messages) {
 
             if (senderIsAdmin) continue;
 
-            // Delete the link message
+            // Delete the link message.
             try {
                 await conn.sendMessage(
                     chatJid,
@@ -166,22 +170,16 @@ async function handleIncomingMessages(conn, messages) {
                 continue;
             }
 
-            // Warn the sender
-            const warning = makePanel('ANTILINK WARNING', [
-                '🚫 Link දැමීම අවසර නැත!',
-                `👤 *Member:* @${getJidNumber(senderJid)}`,
-                '🗑️ Link message එක delete කළා.',
-                '⚠️ නැවත link දැමීමෙන් වළකින්න.'
-            ]);
-
+            // Warn other members.
             await sendWarning(
                 conn,
                 chatJid,
-                warning,
-                {
-                    key,
-                    message: message.message
-                }
+                makePanel('ANTILINK WARNING', [
+                    '🚫 Link දැමීම අවසර නැත!',
+                    `👤 *Member:* @${getJidNumber(senderJid)}`,
+                    '🗑️ Link message එක delete කළා.',
+                    '⚠️ නැවත link දැමීමෙන් වළකින්න.'
+                ])
             );
 
         } catch (error) {
@@ -220,7 +218,6 @@ cmd({
     filename: __filename
 }, async (conn, mek, m, { from, reply, args }) => {
     try {
-        // Register the listener when the command is first used
         initializeAntiLink(conn);
 
         const action = String(args?.[0] || '').toLowerCase();
@@ -231,8 +228,9 @@ cmd({
             return reply(
                 makePanel('ANTILINK ENABLED', [
                     '✅ AntiLink ක්‍රියාත්මකයි.',
-                    '🗑️ Link message delete කර warning දෙනවා.',
-                    '👑 Owner සහ group admins bypass.'
+                    '🗑️ සාමාන්‍ය සාමාජිකයන්ගේ link messages delete කරනවා.',
+                    '👑 Ownerට warning පමණයි.',
+                    '🛡️ Group admins bypass.'
                 ])
             );
         }
@@ -252,7 +250,8 @@ cmd({
                 `📌 *Status:* ${antiLinkEnabled ? '✅ ON' : '❌ OFF'}`,
                 '➤ `.antilink on`',
                 '➤ `.antilink off`',
-                '👑 Owner සහ group admins bypass.'
+                '👑 Ownerට warning පමණයි.',
+                '🛡️ Group admins bypass.'
             ])
         );
 

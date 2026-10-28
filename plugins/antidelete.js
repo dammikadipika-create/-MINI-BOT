@@ -5,7 +5,7 @@ const {
 } = require('../lib/antidel');
 
 // AntiDelete image URL
-const ANTIDELETE_IMAGE_URL = 'https://i.ibb.co/7J9Q8Vf/antidelete.jpg';
+const ANTIDELETE_IMAGE_URL = 'https://files.catbox.moe/2yenlk.jpeg';
 
 cmd({
     pattern: 'antidelete',

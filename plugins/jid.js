@@ -1,110 +1,52 @@
 const { cmd } = require('../command');
 
 cmd({
-    pattern: 'jid',
-    alias: ['getjid', 'id'],
-    desc: 'Get chat, group, or newsletter JID',
-    category: 'main',
-    react: '🆔',
+    pattern: "jid",
+    alias: ["getjid", "id"],
+    desc: "Get WhatsApp JID",
+    category: "main",
+    react: "🆔",
     filename: __filename
-}, async (conn, mek, m, {
+},
+async (conn, mek, m, {
     from,
     quoted,
     mentionedJid,
-    reply,
-    pushname
+    reply
 }) => {
     try {
-        // Prefer the original WhatsApp message's remote JID.
-        const remoteJid =
-            mek?.key?.remoteJid ||
-            m?.key?.remoteJid ||
-            from ||
-            null;
+        let jid;
 
-        let jid = null;
-        let jidType = 'Unknown';
-
-        // If the command is used as a reply, get the quoted sender.
+        // If message is replied to
         if (quoted) {
-            jid =
-                quoted.sender ||
-                quoted.participant ||
-                quoted.key?.participant ||
-                null;
+            jid = quoted.sender || quoted.participant || quoted.key?.participant;
         }
 
-        // If a user is mentioned, get their JID.
-        if (!jid && Array.isArray(mentionedJid) && mentionedJid.length) {
+        // If user is mentioned
+        if (!jid && mentionedJid && mentionedJid.length > 0) {
             jid = mentionedJid[0];
         }
 
-        // Otherwise, get the chat/channel JID itself.
+        // If no reply/mention, use current chat JID
         if (!jid) {
-            jid = remoteJid;
+            jid = from;
         }
 
         if (!jid) {
-            return reply('❌ JID එක ලබාගන්න බැරි වුණා.');
+            return reply("❌ JID එක හොයාගන්න බැරි වුණා.");
         }
 
-        if (jid.endsWith('@newsletter')) {
-            jidType = 'WhatsApp Channel / Newsletter';
-        } else if (jid.endsWith('@g.us')) {
-            jidType = 'WhatsApp Group';
-        } else if (jid.endsWith('@s.whatsapp.net')) {
-            jidType = 'WhatsApp User';
-        } else {
-            jidType = 'WhatsApp Chat';
-        }
+        return reply(
+`╭━━━〔 🆔 DILA-MD JID 〕━━━╮
 
-        const caption = `
-╭━━〔 🆔 ɴɪᴋᴋᴀ x ᴍᴅ 〕━━╮
-┃
-┃ 👋 ʜᴇʟʟᴏ ${pushname || 'User'} ❤️
-┃
-┃ 🤖 ʙᴏᴛ : ɴɪᴋᴋᴀ x ᴍᴅ
-┃
-┃ 📌 ᴊɪᴅ ɪɴғᴏ
-┃
-┃ ➤ *Type:* ${jidType}
-┃ ➤ *JID:*
+┃ 👤 *JID:*
 ┃ ${jid}
-┃
-╰━━━━━━━━━━━━━━━━╯
 
-> ɴɪᴋᴋᴀ x ᴍᴅ 🚀
-`;
-
-        await conn.sendMessage(
-            from || remoteJid,
-            {
-                image: {
-                    url: 'https://i.ibb.co/67DRMzkf/b5fbf712e8fd.jpg'
-                },
-                caption,
-                contextInfo: {
-                    mentionedJid: mek?.sender ? [mek.sender] : [],
-                    forwardingScore: 999,
-                    isForwarded: true,
-                    forwardedNewsletterMessageInfo: {
-                        newsletterJid: '120363403804248705@newsletter',
-                        newsletterName: 'NIKKA X MD',
-                        serverMessageId: 143
-                    }
-                }
-            },
-            { quoted: mek }
+╰━━━━━━━━━━━━━━━━━━╯`
         );
 
     } catch (error) {
-        console.error('NIKKA X MD JID Plugin Error:', error);
-
-        try {
-            await reply(
-                '❌ JID ලබාගැනීමේදී දෝෂයක් ඇති වුණා.\n\n' +
-                'Error: ' + (error.message || 'Unknown error')
-            );
-        } catch {}
+        console.error("JID Plugin Error:", error);
+        return reply("❌ JID ලබාගැනීමේදී error එකක් ආවා.");
     }
 });

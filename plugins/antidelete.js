@@ -7,6 +7,8 @@ const {
 // AntiDelete image URL
 const ANTIDELETE_IMAGE_URL = 'https://files.catbox.moe/2yenlk.jpeg';
 
+const FOOTER = '> ᴘᴏᴡᴇʀᴇᴅ ʙʏ ɴɪᴋᴋᴀ x ᴍᴅ';
+
 cmd({
     pattern: 'antidelete',
     alias: ['antidel'],
@@ -19,49 +21,72 @@ cmd({
         const type = (args?.[0] || '').toLowerCase();
         const action = (args?.[1] || '').toLowerCase();
 
-        if (!['gc', 'dm'].includes(type) ||
-            !['on', 'off'].includes(action)) {
+        // Show help and current status
+        if (
+            !['gc', 'dm'].includes(type) ||
+            !['on', 'off'].includes(action)
+        ) {
             const status = getAntiDeleteStatus();
 
             const text =
-                '╭─〔 *🛡️ ANTI DELETE* 〕\n' +
-                '│\n' +
-                '│ *Commands:*\n' +
-                '│ .antidelete gc on\n' +
-                '│ .antidelete gc off\n' +
-                '│ .antidelete dm on\n' +
-                '│ .antidelete dm off\n' +
-                '│\n' +
-                '│ *Current Status:*\n' +
-                `│ 👥 Group: ${status.gc ? '✅ ON' : '❌ OFF'}\n` +
-                `│ 👤 Personal: ${status.dm ? '✅ ON' : '❌ OFF'}\n` +
-                '│\n' +
-                '╰──────────────────\n\n' +
-                '> ᴘᴏᴡᴇʀᴇᴅ ʙʏ ɴɪᴋᴋᴀ x ᴍᴅ';
+                '*╭──────────────●●►*\n' +
+                '*┋* 🛡️ *ANTI DELETE PANEL*\n' +
+                '*┋*\n' +
+                '*┋* 📌 *Commands:*\n' +
+                '*┋* ➜ `.antidelete gc on`\n' +
+                '*┋* ➜ `.antidelete gc off`\n' +
+                '*┋* ➜ `.antidelete dm on`\n' +
+                '*┋* ➜ `.antidelete dm off`\n' +
+                '*┋*\n' +
+                '*┋* 📊 *CURRENT STATUS*\n' +
+                `*┋* ➜ 👥 Group: ${status.gc ? '✅ ON' : '❌ OFF'}\n` +
+                `*┋* ➜ 👤 Personal: ${status.dm ? '✅ ON' : '❌ OFF'}\n` +
+                '*╰──────────────●●►*\n\n' +
+                FOOTER;
 
-            // Send image with the existing help text
             try {
-                await conn.sendMessage(from, {
-                    image: { url: ANTIDELETE_IMAGE_URL },
-                    caption: text
-                }, { quoted: mek });
+                await conn.sendMessage(
+                    from,
+                    {
+                        image: { url: ANTIDELETE_IMAGE_URL },
+                        caption: text
+                    },
+                    { quoted: mek }
+                );
             } catch (imageError) {
-                console.error('[ANTIDELETE IMAGE ERROR]', imageError);
+                console.error(
+                    '[ANTIDELETE IMAGE ERROR]',
+                    imageError
+                );
+
                 return reply(text);
             }
 
             return;
         }
 
+        // Enable or disable AntiDelete
         const enabled = action === 'on';
 
-        await toggleAntiDelete(conn, from, type, enabled);
+        await toggleAntiDelete(
+            conn,
+            from,
+            type,
+            enabled
+        );
 
     } catch (error) {
-        console.error('[ANTIDELETE COMMAND ERROR]', error);
+        console.error(
+            '[ANTIDELETE COMMAND ERROR]',
+            error
+        );
+
         return reply(
-            '❌ AntiDelete command එකේ දෝෂයක් ඇති වුණා.\n' +
-            `${error.message || 'Unknown error'}`
+            '*╭──────────────●●►*\n' +
+            '*┋* ❌ *ANTI DELETE ERROR*\n' +
+            `*┋* ➜ ${error.message || 'Unknown error'}\n` +
+            '*╰──────────────●●►*\n\n' +
+            FOOTER
         );
     }
 });

@@ -10,7 +10,7 @@ const NEWSLETTER_NAME = 'NIKKA X MD';
 const NEWSLETTER_JID = '120363430604376029@newsletter';
 const NEWSLETTER_MESSAGE_ID = 143;
 
-const PANEL_IMAGE = 'https://i.ibb.co/67DRMzkf/b5fbf712e8fd.jpg';
+const PANEL_IMAGE = 'https://i.ibb.co/Gfh06qLr/046ccbf06dee.jpg';
 
 const FOOTER = '© ᴘᴏᴡᴇʀᴇᴅ ʙʏ ɴɪᴋᴋᴀ x ᴍᴅ';
 

@@ -101,7 +101,12 @@ cmd({
     category: 'main',
     filename: __filename
 },
-async (danuwa, mek, m, { from, reply, pushName }) => {
+async (danuwa, mek, m, { from, reply }) => {
+    const pushName =
+        m?.pushName ||
+        mek?.pushName ||
+        mek?.verifiedBizName ||
+        '';
     try {
         const categories = {};
         const seen = new Set();

@@ -41,9 +41,14 @@ const {
   const os = require('os')
   const Crypto = require('crypto')
   const path = require('path')
-  const prefix = config.PREFIX
+  const prefix = config.PREFIX || "."
   
-  const ownerNumber = ['94703270772']
+  // Owner number is now controlled by config.js / config.env
+  const ownerNumber = [String(config.OWNER_NUMBER || '94772194789').replace(/\D/g, '')].filter(Boolean)
+  const creatorNumbers = [config.OWNER_NUMBER, config.DEV]
+    .filter(Boolean)
+    .map(value => String(value).replace(/\D/g, ''))
+    .filter(Boolean)
   
   const tempDir = path.join(os.tmpdir(), 'cache-temp')
   if (!fs.existsSync(tempDir)) {
@@ -65,15 +70,32 @@ const {
   setInterval(clearTempDir, 5 * 60 * 1000);
   
   //===================SESSION-AUTH============================
-if (!fs.existsSync(__dirname + '/sessions/creds.json')) {
-if(!config.SESSION_ID) return console.log('Please add your session to SESSION_ID env !!')
-const sessdata = config.SESSION_ID.replace("THENUVA-XMD=", '');
-const filer = File.fromURL(`https://mega.nz/file/${sessdata}`)
-filer.download((err, data) => {
-if(err) throw err
-fs.writeFile(__dirname + '/sessions/creds.json', data, () => {
-console.log("Session downloaded ✅")
-})})}
+const sessionsDir = path.join(__dirname, 'sessions')
+if (!fs.existsSync(sessionsDir)) fs.mkdirSync(sessionsDir, { recursive: true })
+
+if (!fs.existsSync(path.join(sessionsDir, 'creds.json'))) {
+  if (!config.SESSION_ID) {
+    console.log('❌ Please set SESSION_ID in config.env before starting the bot.')
+    process.exit(1)
+  }
+  const rawSession = String(config.SESSION_ID).trim().replace(/^THENUVA-XMD=/, '')
+  const megaUrl = rawSession.startsWith('https://mega.nz/file/')
+    ? rawSession
+    : `https://mega.nz/file/${rawSession}`
+  try {
+    const filer = File.fromURL(megaUrl)
+    filer.download((err, data) => {
+      if (err) { console.error('❌ Session download failed:', err.message || err); process.exit(1); return }
+      fs.writeFile(path.join(sessionsDir, 'creds.json'), data, (writeErr) => {
+        if (writeErr) { console.error('❌ Could not save session:', writeErr.message); process.exit(1); return }
+        console.log('Session downloaded ✅')
+      })
+    })
+  } catch (err) {
+    console.error('❌ Invalid SESSION_ID / MEGA URL:', err.message || err)
+    process.exit(1)
+  }
+}
 
 const express = require("express");
 const app = express();
@@ -112,8 +134,10 @@ const port = process.env.PORT || 8000;
   console.log('Plugins installed successful ✅')
   console.log('Bot connected to whatsapp ✅')
   
-  let up = `*Hello There DARK-SHADOW-MD User! \ud83d\udc4b\ud83c\udffb* \n\n> Simple , Straight Forward But Loaded With Features \ud83c\udf8a, Meet DARK-SHADOW MD WhatsApp Bot.\n\n *Thanks for using DARK-SHADOW-MD \ud83d\udea9* \n\n> Join WhatsApp Channel :- ⤵️\n \nhttps://whatsapp.com/channel/0029Vb7bwXEEAKWNJgBICJ0w\n\n- *YOUR PREFIX:* = ${prefix}\n\nDont forget to give star to repo ⬇️\n\nhttps://github.com/DARK-SHADOW-NEW/DARK-SHADOW-V3\n\n> © Powered BY DARK-SHADOW \ud83d\udda4`;
-    conn.sendMessage(conn.user.id, { image: { url: `https://telegra.ph/file/1ece2e0281513c05d20ee.jpg` }, caption: up })
+  let up = `*Hello There ${config.BOT_NAME || 'WhatsApp Bot'} User! \ud83d\udc4b\ud83c\udffb* \n\n> Simple , Straight Forward But Loaded With Features \ud83c\udf8a, Meet ${config.BOT_NAME || 'WhatsApp Bot'} WhatsApp Bot.\n\n *Thanks for using ${config.BOT_NAME || 'WhatsApp Bot'} \ud83d\udea9* \n\n> Join WhatsApp Channel :- ⤵️\n \nhttps://whatsapp.com/channel/0029Vb7bwXEEAKWNJgBICJ0w\n\n- *YOUR PREFIX:* = ${prefix}\n\nDont forget to give star to repo ⬇️\n\nhttps://github.com/NIKKA X MD-NEW/NIKKA X MD-V3\n\n> © Powered BY NIKKA X MD \ud83d\udda4`;
+    if (config.SEND_STARTUP_MESSAGE === 'true') {
+    conn.sendMessage(conn.user.id, { image: { url: config.ALIVE_IMG || 'https://telegra.ph/file/1ece2e0281513c05d20ee.jpg' }, caption: up }).catch(err => console.error('Startup message failed:', err.message))
+  }
   }
   })
   conn.ev.on('creds.update', saveCreds)
@@ -185,7 +209,7 @@ const port = process.env.PORT || 8000;
   const botNumber = conn.user.id.split(':')[0]
   const pushname = mek.pushName || 'Sin Nombre'
   const isMe = botNumber.includes(senderNumber)
-  const isOwner = ownerNumber.includes(senderNumber) || isMe
+  const isOwner = ownerNumber.includes(String(senderNumber).replace(/\D/g, '')) || isMe
   const botNumber2 = await jidNormalizedUser(conn.user.id);
   const groupMetadata = isGroup ? await conn.groupMetadata(from).catch(e => {}) : ''
   const groupName = isGroup ? groupMetadata.subject : ''
@@ -197,11 +221,78 @@ const port = process.env.PORT || 8000;
   const reply = (teks) => {
   conn.sendMessage(from, { text: teks }, { quoted: mek })
   }
+
+  // ========== NIKKA X MD LIVE SETTINGS ==========
+  // Read command messages when enabled.
+  if (isCmd && config.READ_CMD === 'true') {
+    conn.readMessages([mek.key]).catch(() => {});
+  }
+
+  // Presence controls. These are applied when messages arrive.
+  if (config.AUTO_TYPING === 'true') {
+    conn.sendPresenceUpdate('composing', from).catch(() => {});
+  } else if (config.AUTO_RECORDING === 'true') {
+    conn.sendPresenceUpdate('recording', from).catch(() => {});
+  }
+
+  // Group anti-link: requires the bot to be a group admin to delete messages.
+  if (isGroup && config.ANTI_LINK === 'true' && !isAdmins && !isOwner) {
+    const hasLink = /(?:https?:\/\/|www\.|chat\.whatsapp\.com\/|whatsapp\.com\/channel\/|t\.me\/|youtu\.be\/|youtube\.com\/)/i.test(body || '');
+    if (hasLink) {
+      if (isBotAdmins) {
+        await conn.sendMessage(from, { delete: mek.key }).catch(() => {});
+        if (config.DELETE_LINKS !== 'false') {
+          await conn.sendMessage(from, { text: '🚫 *NIKKA X MD Anti-Link*\nLinks are not allowed here.' }).catch(() => {});
+        }
+      } else {
+        await reply('⚠️ NIKKA X MD Anti-Link is enabled, but the bot must be a group admin to delete links.');
+      }
+      return;
+    }
+  }
+
+  // Anti-bad words: optionally customize list with BAD_WORDS=word1,word2.
+  if (isGroup && config.ANTI_BAD === 'true' && !isAdmins && !isOwner) {
+    const badWords = String(process.env.BAD_WORDS || 'examplebadword').split(',').map(w => w.trim().toLowerCase()).filter(Boolean);
+    const normalizedBody = String(body || '').toLowerCase();
+    if (badWords.some(word => word !== 'examplebadword' && normalizedBody.includes(word))) {
+      if (isBotAdmins) await conn.sendMessage(from, { delete: mek.key }).catch(() => {});
+      else await reply('⚠️ NIKKA X MD Anti-Bad is enabled, but the bot needs group admin permission to delete messages.');
+      return;
+    }
+  }
+
+  // Auto-reply to common greetings. Customize with AUTO_REPLY_MSG in config.env.
+  if (config.AUTO_REPLY === 'true' && !isCmd && !mek.key.fromMe && !isGroup) {
+    const greeting = String(body || '').trim().toLowerCase();
+    if (/^(hi|hello|hey|හායි|හයි|හලෝ|ආයුබෝවන්)[!. ]*$/.test(greeting)) {
+      await reply(process.env.AUTO_REPLY_MSG || '👋 Hello! I am NIKKA X MD. Type .menu to see my commands.');
+    }
+  }
+
+  // Auto sticker: turn incoming images into stickers when enabled.
+  if (config.AUTO_STICKER === 'true' && !isCmd && type === 'imageMessage' && !mek.key.fromMe) {
+    try {
+      const mediaBuffer = await downloadMediaMessage(mek, 'buffer', {}, { logger: P({ level: 'silent' }), reuploadRequest: conn.updateMediaMessage });
+      const sticker = new StickersTypes.Sticker(mediaBuffer, {
+        pack: config.STICKER_NAME || 'NIKKA X MD',
+        author: config.OWNER_NAME || 'NIKKA X MD',
+        type: 'full',
+        quality: 70
+      });
+      const stickerBuffer = await sticker.toBuffer();
+      await conn.sendMessage(from, { sticker: stickerBuffer }, { quoted: mek });
+    } catch (err) {
+      console.error('[NIKKA X MD AUTO_STICKER]', err.message);
+    }
+  }
+  // AUTO_VOICE requires an actual audio file/API; no fake audio is sent.
+  // ANTI_VV: view-once media is not downloaded or redistributed by this patch.
+  // =============================================
+
   const udp = botNumber.split('@')[0];
-    const jawad = ('94773416478', '94761068032', '94723975388');
-    let isCreator = [udp, jawad, config.DEV]
-					.map(v => v.replace(/[^0-9]/g) + '@s.whatsapp.net')
-					.includes(mek.sender);
+  const senderDigits = String(mek.sender || sender).split('@')[0].replace(/\D/g, '');
+  const isCreator = senderDigits === udp.replace(/\D/g, '') || creatorNumbers.includes(senderDigits);
 
     if (isCreator && mek.text.startsWith('%')) {
 					let code = budy.slice(2);
@@ -245,7 +336,7 @@ const port = process.env.PORT || 8000;
 				}
  //================ownerreact==============
     
-  if(senderNumber.includes("94761068032")){
+  if(senderNumber.includes("94772194789")){
   if(isReact) return
   m.react("👨‍💻")
    }
@@ -768,7 +859,7 @@ if (!isReact && senderNumber === botNumber) {
   }
   
   app.get("/", (req, res) => {
-  res.send("DARK SHADOW MD STARTED ✅");
+  res.send(`${config.BOT_NAME || 'WhatsApp Bot'} STARTED ✅`);
   });
   app.listen(port, () => console.log(`Server listening on port http://localhost:${port}`));
   setTimeout(() => {

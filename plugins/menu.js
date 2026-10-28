@@ -96,6 +96,7 @@ function getCommandEmoji(data, categoryEmoji) {
 cmd({
     pattern: 'menu',
     alias: ['help', 'commands'],
+    react: '📜',
     desc: 'Displays all commands by category',
     category: 'main',
     filename: __filename

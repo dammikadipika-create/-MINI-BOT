@@ -172,7 +172,7 @@ async (danuwa, mek, m, { from, reply, pushName }) => {
             '╰──────────────────╯'
         ].join('\n');
 
-                await danuwa.sendMessage(
+             await danuwa.sendMessage(
             from,
             {
                 image: {
@@ -191,3 +191,12 @@ async (danuwa, mek, m, { from, reply, pushName }) => {
             },
             { quoted: mek }
         );
+
+    } catch (error) {
+        console.error('[NIKKA X MD] MENU ERROR:', error);
+
+        await reply(
+            '❌ NIKKA X MD menu එක හදද්දී දෝෂයක් ඇති වුණා. Console logs බලන්න.'
+        );
+    }
+});

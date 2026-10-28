@@ -195,9 +195,9 @@ async function sendPanel(conn, from, quoted, text) {
                 forwardingScore: 999,
                 isForwarded: true,
                 forwardedNewsletterMessageInfo: {
-                    newsletterJid: NEWSLETTER_JID,
-                    newsletterName: NEWSLETTER_NAME,
-                    serverMessageId: NEWSLETTER_MESSAGE_ID
+                newsletterJid: '120363430604376029@newsletter',
+                newsletterName: 'NIKKA XMD',
+                 serverMessageId: 143
                 }
             }
         },

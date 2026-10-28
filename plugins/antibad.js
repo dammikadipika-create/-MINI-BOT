@@ -1,3 +1,6 @@
+
+'use strict';
+
 const { cmd } = require('../command');
 
 const BOT_NAME = 'NIKKA X MD';
@@ -6,23 +9,24 @@ const FOOTER = '> ᴘᴏᴡᴇʀᴇᴅ ʙʏ ɴɪᴋᴋᴀ x ᴍᴅ';
 let antiBadEnabled = true;
 const initializedConnections = new WeakSet();
 
-// Local detection patterns. No external API required.
-const BAD_PATTERNS = [
-  // Common English profanity patterns
-  /\bf+u+c+k+\w*/i,
-  /\bs+h+i+t+\w*/i,
-  /\bb+i+t+c+h+\w*/i,
-  /\ba+s+s+h+o+l+e+\w*/i,
-  /\bb+a+s+t+a+r+d+\w*/i,
-  /\bd+i+c+k+\w*/i,
-  /\bc+u+n+t+\w*/i,
-  /\bm+o+t+h+e+r+f+u+c+k+\w*/i,
+// English profanity roots and common romanized Sinhala profanity.
+// This is a starter set, not a complete language detector.
+const ENGLISH_WORDS = [
+  'fuck', 'shit', 'bitch', 'asshole', 'bastard',
+  'motherfucker', 'bullshit', 'dickhead', 'cunt',
+  'slut', 'whore', 'dick', 'pussy'
+];
 
-  // Common romanized/Singlish profanity patterns
-  /\bh+u+t+h+t+h+o+\w*/i,
-  /\bh+u+t+h+a+\w*/i,
-  /\bp+a+k+a+y+a+\w*/i,
-  /\bw+a+l+a+t+h+a+\w*/i
+const SINGLISH_WORDS = [
+  'huththo', 'huththa', 'huththaa', 'pakaya',
+  'kariyo', 'ponnaya', 'wesige', 'wesiy',
+  'walaththa', 'balla', 'paraya'
+];
+
+// Sinhala-script examples. Extend this set as needed.
+const SINHALA_WORDS = [
+  'හුත්', 'පකය', 'පක', 'කැරි', 'වේසි',
+  'වල්', 'පොන්න', 'බල්ලා'
 ];
 
 function getMessageText(message) {
@@ -35,6 +39,8 @@ function getMessageText(message) {
     msg.imageMessage?.caption ||
     msg.videoMessage?.caption ||
     msg.documentMessage?.caption ||
+    msg.buttonsResponseMessage?.selectedDisplayText ||
+    msg.listResponseMessage?.title ||
     ''
   );
 }
@@ -44,27 +50,41 @@ function normalizeText(text) {
     .normalize('NFKC')
     .toLowerCase()
     .replace(/[\u200B-\u200D\uFEFF]/g, '')
-    .replace(/[0@]/g, char => char === '0' ? 'o' : 'a')
-    .replace(/[1!]/g, 'i')
-    .replace(/[3]/g, 'e')
-    .replace(/[4]/g, 'a')
-    .replace(/[5$]/g, 's')
-    .replace(/[7]/g, 't')
-    .replace(/[^a-z\u0D80-\u0DFF\s]/g, ' ')
+    .replace(/[.,!?*_~`'"()[\]{}<>:;|\\/-]+/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
 }
 
-function containsBadLanguage(text) {
-  const original = String(text || '');
-  const normalized = normalizeText(original);
+function containsBadWord(text) {
+  const normalized = normalizeText(text);
   const compact = normalized.replace(/\s+/g, '');
 
-  return BAD_PATTERNS.some(pattern =>
-    pattern.test(original) ||
-    pattern.test(normalized) ||
-    pattern.test(compact)
-  );
+  // English words: match complete words, including inflected forms.
+  for (const word of ENGLISH_WORDS) {
+    const escaped = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const regex = new RegExp(`(^|[^a-z])${escaped}(?:[a-z]*)($|[^a-z])`, 'i');
+
+    if (regex.test(normalized) || regex.test(compact)) {
+      return true;
+    }
+  }
+
+  // Romanized Sinhala: match common spellings and joined variants.
+  for (const word of SINGLISH_WORDS) {
+    if (normalized.includes(word) || compact.includes(word)) {
+      return true;
+    }
+  }
+
+  // Sinhala Unicode: substring matching catches some suffix variations,
+  // but may also flag words containing these roots unintentionally.
+  for (const word of SINHALA_WORDS) {
+    if (normalized.includes(word)) {
+      return true;
+    }
+  }
+
+  return false;
 }
 
 function makePanel(title, lines = []) {
@@ -94,7 +114,7 @@ async function processMessages(conn, messages) {
       if (key.fromMe || message.message?.protocolMessage) continue;
 
       const text = getMessageText(message);
-      if (!text || !containsBadLanguage(text)) continue;
+      if (!text || !containsBadWord(text)) continue;
 
       let deleted = false;
 
@@ -102,21 +122,21 @@ async function processMessages(conn, messages) {
         await conn.sendMessage(chatJid, { delete: key });
         deleted = true;
       } catch (error) {
-        console.error('[ANTIBAD DELETE ERROR]', error.message);
+        console.error('[ANTIBAD DELETE ERROR]', error);
       }
 
       await conn.sendMessage(chatJid, {
         text: makePanel('ANTIBAD WARNING', [
-          '🚫 නුසුදුසු භාෂාවක් හඳුනාගත්තා!',
+          '🚫 නුසුදුසු වචනයක් හඳුනාගත්තා!',
           deleted
             ? '🗑️ Message එක delete කළා.'
-            : '⚠️ Message එක delete කරන්න බැරි වුණා.',
-          '🤍 කරුණාකර group එකේ ගෞරවයෙන් කතා කරන්න.',
-          '🛡️ නැවත මෙවැනි වචන භාවිතයෙන් වළකින්න.'
+            : '❌ Delete කරන්න බැරි වුණා.',
+          '🤍 කරුණාකර ගෞරවයෙන් කතා කරන්න.',
+          '⚠️ නැවත මෙවැනි වචන භාවිතයෙන් වළකින්න.'
         ])
       });
     } catch (error) {
-      console.error('[ANTIBAD ERROR]', error.message);
+      console.error('[ANTIBAD MESSAGE ERROR]', error);
     }
   }
 }
@@ -124,7 +144,11 @@ async function processMessages(conn, messages) {
 function initializeAntiBad(conn) {
   if (!conn || typeof conn !== 'object') return;
   if (initializedConnections.has(conn)) return;
-  if (!conn.ev || typeof conn.ev.on !== 'function') return;
+
+  if (!conn.ev || typeof conn.ev.on !== 'function') {
+    console.error('[ANTIBAD] Connection event emitter unavailable.');
+    return;
+  }
 
   initializedConnections.add(conn);
 
@@ -149,16 +173,18 @@ cmd({
 
   if (action === 'on') {
     antiBadEnabled = true;
+
     return reply(makePanel('ANTIBAD ENABLED', [
       '✅ AntiBad ක්‍රියාත්මකයි.',
-      '🔎 Local word-pattern detection සක්‍රියයි.',
-      '🗑️ හඳුනාගත් messages delete කිරීමට උත්සාහ කරනවා.',
-      '⚠️ සෑම slang වචනයක්ම හඳුනාගැනීම සහතික කළ නොහැක.'
+      '🇱🇰 Sinhala / Singlish වචන පරීක්ෂා කරනවා.',
+      '🇬🇧 English profanity patterns පරීක්ෂා කරනවා.',
+      '🗑️ හඳුනාගත් messages delete කිරීමට උත්සාහ කරනවා.'
     ]));
   }
 
   if (action === 'off') {
     antiBadEnabled = false;
+
     return reply(makePanel('ANTIBAD DISABLED', [
       '❌ AntiBad අක්‍රිය කළා.'
     ]));
@@ -168,7 +194,6 @@ cmd({
     `📌 Status: ${antiBadEnabled ? '✅ ON' : '❌ OFF'}`,
     '➤ .antibad on',
     '➤ .antibad off',
-    '🤍 API අවශ්‍ය නැහැ.',
-    '⚠️ Local patterns නිසා සමහර වචන මඟහැරෙන්න පුළුවන්.'
+    '🤍 External API අවශ්‍ය නැහැ.'
   ]));
 });

@@ -1,14 +1,15 @@
-'use strict';
-
 const { cmd } = require('../command');
 const {
     toggleAntiDelete,
     getAntiDeleteStatus
 } = require('../lib/antidel');
 
+// AntiDelete image URL
+const ANTIDELETE_IMAGE_URL = 'https://i.ibb.co/7J9Q8Vf/antidelete.jpg';
+
 cmd({
     pattern: 'antidelete',
-    alias: ['antidel', 'antidelete'],
+    alias: ['antidel'],
     react: '🛡️',
     desc: 'Enable or disable AntiDelete',
     category: 'tools',
@@ -22,7 +23,7 @@ cmd({
             !['on', 'off'].includes(action)) {
             const status = getAntiDeleteStatus();
 
-            return reply(
+            const text =
                 '╭─〔 *🛡️ ANTI DELETE* 〕\n' +
                 '│\n' +
                 '│ *Commands:*\n' +
@@ -35,8 +36,21 @@ cmd({
                 `│ 👥 Group: ${status.gc ? '✅ ON' : '❌ OFF'}\n` +
                 `│ 👤 Personal: ${status.dm ? '✅ ON' : '❌ OFF'}\n` +
                 '│\n' +
-                '╰──────────────────'
-            );
+                '╰──────────────────\n\n' +
+                '> ᴘᴏᴡᴇʀᴇᴅ ʙʏ ɴɪᴋᴋᴀ x ᴍᴅ';
+
+            // Send image with the existing help text
+            try {
+                await conn.sendMessage(from, {
+                    image: { url: ANTIDELETE_IMAGE_URL },
+                    caption: text
+                }, { quoted: mek });
+            } catch (imageError) {
+                console.error('[ANTIDELETE IMAGE ERROR]', imageError);
+                return reply(text);
+            }
+
+            return;
         }
 
         const enabled = action === 'on';

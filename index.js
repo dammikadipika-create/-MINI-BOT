@@ -280,21 +280,56 @@ const port = process.env.PORT || 8000;
   }
 
   // Auto sticker: turn incoming images into stickers when enabled.
-  if (config.AUTO_STICKER === 'true' && !isCmd && type === 'imageMessage' && !mek.key.fromMe) {
+if (
+    String(config.AUTO_STICKER || '').toLowerCase() === 'true' &&
+    !isCmd &&
+    type === 'imageMessage' &&
+    !mek.key.fromMe
+) {
     try {
-      const mediaBuffer = await downloadMediaMessage(mek, 'buffer', {}, { logger: P({ level: 'silent' }), reuploadRequest: conn.updateMediaMessage });
-      const sticker = new StickersTypes.Sticker(mediaBuffer, {
-        pack: config.STICKER_NAME || 'NIKKA X MD',
-        author: config.OWNER_NAME || 'NIKKA X MD',
-        type: 'full',
-        quality: 70
-      });
-      const stickerBuffer = await sticker.toBuffer();
-      await conn.sendMessage(from, { sticker: stickerBuffer }, { quoted: mek });
+        if (!mek.message || !mek.message.imageMessage) {
+            return;
+        }
+
+        const mediaBuffer = await downloadMediaMessage(
+            mek,
+            'buffer',
+            {},
+            {
+                logger: P({ level: 'silent' }),
+                reuploadRequest: conn.updateMediaMessage
+            }
+        );
+
+        if (!mediaBuffer || !Buffer.isBuffer(mediaBuffer)) {
+            throw new Error('Image download failed or returned an invalid buffer.');
+        }
+
+        const sticker = new StickersTypes.Sticker(mediaBuffer, {
+            pack: String(config.STICKER_NAME || 'NIKKA X MD'),
+            author: String(config.OWNER_NAME || 'NIKKA X MD'),
+            type: 'full',
+            quality: 70
+        });
+
+        const stickerBuffer = await sticker.toBuffer();
+
+        if (!stickerBuffer || !Buffer.isBuffer(stickerBuffer)) {
+            throw new Error('Sticker conversion failed.');
+        }
+
+        await conn.sendMessage(
+            from,
+            { sticker: stickerBuffer },
+            { quoted: mek }
+        );
     } catch (err) {
-      console.error('[NIKKA X MD AUTO_STICKER]', err.message);
+        console.error(
+            '[NIKKA X MD AUTO_STICKER]',
+            err.stack || err.message || err
+        );
     }
-  }
+}
   // AUTO_VOICE requires an actual audio file/API; no fake audio is sent.
   // ANTI_VV: view-once media is not downloaded or redistributed by this patch.
   // =============================================

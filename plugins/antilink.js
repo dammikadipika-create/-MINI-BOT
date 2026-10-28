@@ -3,8 +3,6 @@ const config = require('../config');
 
 const BOT_NAME = 'NIKKA X MD';
 const FOOTER = '> ᴘᴏᴡᴇʀᴇᴅ ʙʏ ɴɪᴋᴋᴀ x ᴍᴅ';
-
-// Owner number: 0772194789
 const OWNER_NUMBER = '94772194789';
 
 let antiLinkEnabled = true;
@@ -14,7 +12,9 @@ const LINK_REGEX =
   /(?:https?:\/\/|www\.|chat\.whatsapp\.com\/|wa\.me\/|t\.me\/|telegram\.me\/|facebook\.com\/|fb\.me\/|instagram\.com\/|tiktok\.com\/|youtu\.be\/|youtube\.com\/|discord\.gg\/|discord\.com\/invite\/)[^\s]*/i;
 
 function normalizeNumber(value) {
-  return String(value || '').replace(/\D/g, '').replace(/^0/, '94');
+  let number = String(value || '').replace(/\D/g, '');
+  if (number.startsWith('0')) number = '94' + number.slice(1);
+  return number;
 }
 
 function getOwnerNumbers() {
@@ -26,7 +26,8 @@ function getOwnerNumbers() {
     config.ownerNumber
   ]
     .filter(Boolean)
-    .map(normalizeNumber);
+    .map(normalizeNumber)
+    .filter(Boolean);
 }
 
 function getJidNumber(jid) {
@@ -39,13 +40,14 @@ function getJidNumber(jid) {
 function isOwnerJid(jid, conn, fromMe = false) {
   if (fromMe) return true;
 
-  const number = getJidNumber(jid);
+  const number = normalizeNumber(getJidNumber(jid));
   const owners = getOwnerNumbers();
+  const botNumber = normalizeNumber(getJidNumber(conn?.user?.id));
 
-  const botNumber = getJidNumber(conn?.user?.id);
-  if (botNumber && number === botNumber) return true;
-
-  return owners.includes(number);
+  return Boolean(
+    (number && owners.includes(number)) ||
+    (number && botNumber && number === botNumber)
+  );
 }
 
 function getMessageText(message) {
@@ -68,12 +70,15 @@ function getMessageText(message) {
 
 function makePanel(title, lines = []) {
   return [
-    '╭──────────────●●►',
-    `┋ 🔗 *${title}*`,
-    '┋',
-    ...lines.map(line => `┋ ${line}`),
-    '╰──────────────●●►',
+    '╭━━━『 🤍 ɴɪᴋᴋᴀ x ᴍᴅ 🤍 』━━━╮',
+    '┃',
+    `┃  ✨ *${title}*`,
+    '┃',
+    ...lines.map(line => `┃  ${line}`),
+    '┃',
+    '╰━━━━━━━━━━━━━━━━━━━━━━╯',
     '',
+    '      🤍 ──「 ᴀɴᴛɪʟɪɴᴋ ɴᴏᴛɪᴄᴇ 」── 🤍',
     FOOTER
   ].join('\n');
 }
@@ -123,24 +128,13 @@ async function handleIncomingMessages(conn, messages) {
         key.participant ||
         (key.fromMe ? conn.user?.id : chatJid);
 
-      // Owner/bot account gets a warning only; never delete its message.
-      if (isOwnerJid(senderJid, conn, key.fromMe)) {
-        await sendWarning(
-          conn,
-          chatJid,
-          makePanel('OWNER ANTILINK WARNING', [
-            `👑 *${BOT_NAME} Owner,* link එකක් හඳුනාගත්තා!`,
-            '⚠️ මෙය warning එකක් පමණයි.',
-            '✅ ඔබගේ link message එක delete කරන්නේ නැහැ.'
-          ])
-        );
-        continue;
-      }
+      // Group admins bypass AntiLink, but Owner does not.
+      const senderIsOwner = isOwnerJid(senderJid, conn, key.fromMe);
+      const senderIsAdmin = await isGroupAdmin(conn, chatJid, senderJid);
 
-      // Group admins are allowed to post links.
-      if (await isGroupAdmin(conn, chatJid, senderJid)) continue;
+      if (senderIsAdmin && !senderIsOwner) continue;
 
-      // Delete link message from a regular member.
+      // Delete the link message, including the Owner's message.
       try {
         await conn.sendMessage(chatJid, { delete: key });
       } catch (error) {
@@ -150,7 +144,7 @@ async function handleIncomingMessages(conn, messages) {
           conn,
           chatJid,
           makePanel('ANTILINK WARNING', [
-            '🔗 Link එකක් හඳුනාගත්තා.',
+            '🔗 Link එකක් හඳුනාගත්තා!',
             '❌ Message එක delete කරන්න බැරි වුණා.',
             '🤖 Bot එකට group admin permission ලබා දෙන්න.'
           ])
@@ -158,16 +152,29 @@ async function handleIncomingMessages(conn, messages) {
         continue;
       }
 
-      await sendWarning(
-        conn,
-        chatJid,
-        makePanel('ANTILINK WARNING', [
-          '🚫 Group එකේ link දැමීම අවසර නැත!',
-          `👤 Member: @${getJidNumber(senderJid)}`,
-          '🗑️ Link message එක delete කළා.',
-          '⚠️ නැවත link දැමීමෙන් වළකින්න.'
-        ])
-      );
+      if (senderIsOwner) {
+        await sendWarning(
+          conn,
+          chatJid,
+          makePanel('OWNER ANTILINK WARNING', [
+            '👑 *NIKKA X MD Owner*',
+            '🔗 ඔබ දැමූ link එකක් හඳුනාගත්තා!',
+            '🗑️ Link message එක delete කළා.',
+            '⚠️ Group එකේ link දැමීමෙන් වළකින්න.'
+          ])
+        );
+      } else {
+        await sendWarning(
+          conn,
+          chatJid,
+          makePanel('ANTILINK WARNING', [
+            '🚫 Group එකේ link දැමීම අවසර නැත!',
+            `👤 Member: @${getJidNumber(senderJid)}`,
+            '🗑️ Link message එක delete කළා.',
+            '⚠️ නැවත link දැමීමෙන් වළකින්න.'
+          ])
+        );
+      }
     } catch (error) {
       console.error('[ANTILINK MESSAGE ERROR]', error);
     }
@@ -189,7 +196,7 @@ function initializeAntiLink(conn) {
     await handleIncomingMessages(conn, messages);
   });
 
-  console.log(`🔗 ${BOT_NAME} AntiLink listener initialized.`);
+  console.log(`🤍 ${BOT_NAME} AntiLink listener initialized.`);
 }
 
 cmd({
@@ -207,20 +214,18 @@ cmd({
 
     if (action === 'on') {
       antiLinkEnabled = true;
-
       return reply(
         makePanel('ANTILINK ENABLED', [
           '✅ AntiLink ක්‍රියාත්මකයි.',
-          '🗑️ සාමාන්‍ය membersලාගේ link messages delete කරනවා.',
-          '👑 Ownerට warning පමණයි; message delete කරන්නේ නැහැ.',
-          '🛡️ Group adminsලාට link දැමීමට අවසර ඇත.'
+          '🗑️ Owner ඇතුළු link දැමූ අයගේ messages delete කරනවා.',
+          '⚠️ Link දැමූ අයට warning යවනවා.',
+          '🛡️ Owner හැර group adminsලා bypass.'
         ])
       );
     }
 
     if (action === 'off') {
       antiLinkEnabled = false;
-
       return reply(
         makePanel('ANTILINK DISABLED', [
           '❌ AntiLink අක්‍රිය කළා.'
@@ -233,8 +238,8 @@ cmd({
         `📌 Status: ${antiLinkEnabled ? '✅ ON' : '❌ OFF'}`,
         '➤ .antilink on',
         '➤ .antilink off',
-        '👑 Ownerට warning පමණයි.',
-        '🛡️ Group adminsලා bypass.'
+        '👑 Ownerටත් AntiLink ක්‍රියාත්මකයි.',
+        '🛡️ Owner හැර group adminsලා bypass.'
       ])
     );
   } catch (error) {

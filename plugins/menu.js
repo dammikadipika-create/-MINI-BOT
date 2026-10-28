@@ -172,22 +172,22 @@ async (danuwa, mek, m, { from, reply, pushName }) => {
             '╰──────────────────╯'
         ].join('\n');
 
-        await danuwa.sendMessage(
+                await danuwa.sendMessage(
             from,
             {
                 image: {
                     url: 'https://i.ibb.co/67DRMzkf/b5fbf712e8fd.jpg'
                 },
-                caption: menuText.trim()
+                caption: menuText.trim(),
+                contextInfo: {
+                    forwardingScore: 999,
+                    isForwarded: true,
+                    forwardedNewsletterMessageInfo: {
+                        newsletterJid: '120363430604376029@newsletter',
+                        newsletterName: 'NIKKA X MD',
+                        serverMessageId: 143
+                    }
+                }
             },
             { quoted: mek }
         );
-
-    } catch (error) {
-        console.error('[NIKKA X MD] MENU ERROR:', error);
-
-        await reply(
-            '❌ NIKKA X MD menu එක හදද්දී දෝෂයක් ඇති වුණා. Console logs බලන්න.'
-        );
-    }
-});

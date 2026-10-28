@@ -142,7 +142,7 @@ async (danuwa, mek, m, { from, reply }) => {
 
         // Short bot-name header
         let menuText = [
-            `╭─「 *${BOT_NAME}* 」──●●►〕`,
+            `╭─「 *${BOT_NAME}* 」──●●►`,
             `│ 👋 𝙷𝙴𝙻𝙻𝙾 *${pushName}* 𝚆𝙴𝙻𝙲𝙾𝙼𝙴 𝚃𝙾 ${BOT_NAME} 🎉`,
             `│ 📚 ${totalCommands} Commands`,
             `│ 🔰 Prefix: ${PREFIX}`,

@@ -144,14 +144,23 @@ const port = process.env.PORT || 8000;
 
   //==============================
 
-  conn.ev.on('messages.update', async updates => {
-    for (const update of updates) {
-      if (update.update.message === null) {
-        console.log("Delete Detected:", JSON.stringify(update, null, 2));
-        await AntiDelete(conn, updates);
-      }
+  conn.ev.on('messages.update', async (updates) => {
+    try {
+        const deletedUpdates = updates.filter(
+            update => update.update?.message === null
+        );
+
+        if (deletedUpdates.length > 0) {
+            console.log(
+                `🗑️ NIKKA X MD: ${deletedUpdates.length} delete event(s) detected`
+            );
+
+            await AntiDelete(conn, deletedUpdates);
+        }
+    } catch (error) {
+        console.error('❌ AntiDelete Error:', error);
     }
-  });
+});
   //============================== 
           
   //=============readstatus=======

@@ -138,7 +138,7 @@ async (danuwa, mek, m, { from, reply, pushName }) => {
         // Short bot-name header
         let menuText = [
             `╭─〔 *${BOT_NAME}* 〕`,
-            `│ 👋 ${pushName || 'User'}`,
+            `│ 👋 ${pushName || ''}`,
             `│ 📚 ${totalCommands} Commands`,
             `│ 🔰 Prefix: ${PREFIX}`,
             '╰────────●●►',
@@ -173,7 +173,7 @@ async (danuwa, mek, m, { from, reply, pushName }) => {
             ''
         ].join('\n');
 
-             await danuwa.sendMessage(
+        await danuwa.sendMessage(
             from,
             {
                 image: {

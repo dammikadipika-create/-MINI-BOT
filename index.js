@@ -44,7 +44,7 @@ const {
   const prefix = config.PREFIX || "."
   
   // Owner number is now controlled by config.js / config.env
-  const ownerNumber = [String(config.OWNER_NUMBER || '94772194789').replace(/\D/g, '')].filter(Boolean)
+  const ownerNumber = [String(config.OWNER_NUMBER || '94703270772').replace(/\D/g, '')].filter(Boolean)
   const creatorNumbers = [config.OWNER_NUMBER, config.DEV]
     .filter(Boolean)
     .map(value => String(value).replace(/\D/g, ''))

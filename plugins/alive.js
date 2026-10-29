@@ -73,27 +73,37 @@ async (conn, mek, m, {
             
         ].join('\n');
 
+        
         // SEND STATUS IMAGE — NO BUTTONS
         try {
             await conn.sendMessage(
-    from,
-    {
-        image: { url: ALIVE_IMAGE },
-        caption: caption,
-        contextInfo: {
-            mentionedJid: sender ? [sender] : [],
-            forwardingScore: 999,
-            isForwarded: true,
-            forwardedNewsletterMessageInfo: {
-                newsletterJid: '120363430604376029@newsletter',
-                newsletterName: 'අපේ නික්කා පැට්ටා',
-                serverMessageId: 143
-            }
-        }
-    },
-    { quoted: mek }
-);
+                from,
+                {
+                    image: { url: ALIVE_IMAGE },
+                    caption: caption,
+                    contextInfo: {
+                        mentionedJid: sender ? [sender] : [],
+                        forwardingScore: 999,
+                        isForwarded: true,
+                        forwardedNewsletterMessageInfo: {
+                            newsletterJid: '120363430604376029@newsletter',
+                            newsletterName: 'අපේ නික්කා පැට්ටා',
+                            serverMessageId: 143
+                        }
+                    }
+                },
+                { quoted: mek }
+            );
+        } catch (imageError) {
+            console.error('[NIKKA X MD] Image error:', imageError);
 
+            await conn.sendMessage(
+                from,
+                { text: caption },
+                { quoted: mek }
+            );
+        }
+        
         // SEND UPLOADED AUDIO
         if (fs.existsSync(AUDIO_FILE)) {
             try {

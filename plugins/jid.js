@@ -9,7 +9,7 @@ const NEWSLETTER_NAME = 'අපේ නික්කා පැට්ටා';
 const NEWSLETTER_JID = '120363430604376029@newsletter';
 const NEWSLETTER_MESSAGE_ID = 143;
 
-const IMAGE_URL = 'https://i.ibb.co/Jw3Dyyqz/dec1fcbd941d.jpg';
+const IMAGE_URL = 'https://files.catbox.moe/imq304.jpg';
 
 cmd({
     pattern: 'jid',

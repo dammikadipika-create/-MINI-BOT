@@ -230,55 +230,7 @@ const port = process.env.PORT || 8000;
   const reply = (teks) => {
   conn.sendMessage(from, { text: teks }, { quoted: mek })
   }
-const isCmd = body.startsWith(prefix);
-const budy = typeof mek.text === 'string' ? mek.text : false;
-const command = isCmd
-    ? body.slice(prefix.length).trim().split(' ').shift().toLowerCase()
-    : '';
 
-const args = body.trim().split(/ +/).slice(1);
-const q = args.join(' ');
-const text = args.join(' ');
-
-const isGroup = from.endsWith('@g.us');
-
-const sender = mek.key.fromMe
-    ? (conn.user.id.split(':')[0] + '@s.whatsapp.net' || conn.user.id)
-    : (mek.key.participant || mek.key.remoteJid);
-
-const senderNumber = sender.split('@')[0];
-const botNumber = conn.user.id.split(':')[0];
-const pushname = mek.pushName || 'Sin Nombre';
-const isMe = botNumber.includes(senderNumber);
-const isOwner =
-    ownerNumber.includes(String(senderNumber).replace(/\D/g, '')) || isMe;
-
-const botNumber2 = await jidNormalizedUser(conn.user.id);
-
-// Safe group metadata handling
-let groupMetadata = null;
-
-if (isGroup) {
-    try {
-        groupMetadata = await conn.groupMetadata(from);
-    } catch (error) {
-        console.error('[GROUP METADATA ERROR]', error.message);
-    }
-}
-
-const groupName = groupMetadata?.subject || '';
-const participants = groupMetadata?.participants || [];
-const groupAdmins = participants.length
-    ? await getGroupAdmins(participants)
-    : [];
-
-const isBotAdmins = groupAdmins.includes(botNumber2);
-const isAdmins = groupAdmins.includes(sender);
-
-const isReact = Boolean(m?.message?.reactionMessage);
-
-const reply = (teks) =>
-    conn.sendMessage(from, { text: teks }, { quoted: mek });
   // ========== NIKKA X MD LIVE SETTINGS ==========
   // Read command messages when enabled.
   if (isCmd && config.READ_CMD === 'true') {

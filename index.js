@@ -172,7 +172,7 @@ const port = process.env.PORT || 8000;
     ? mek.message.ephemeralMessage.message 
     : mek.message;
     //console.log("New Message Detected:", JSON.stringify(mek, null, 2));
-  if (config.READ_MESSAGE === 'true') {
+  if (config.READ_MESSAGE === 'false') {
     await conn.readMessages([mek.key]);  // Mark message as read
     console.log(`Marked message from ${mek.key.remoteJid} as read.`);
   }

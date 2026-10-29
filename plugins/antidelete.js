@@ -17,6 +17,24 @@ cmd({
     category: 'tools',
     filename: __filename
 }, async (conn, mek, m, { from, reply, args }) => {
+
+    // Owner Only Protection
+    const ownerNumber = '94703270772';
+    const senderNumber = (m.sender || '')
+        .split('@')[0]
+        .split(':')[0];
+
+    if (senderNumber !== ownerNumber) {
+        return reply(
+            '*╭──────────────●●►*\n' +
+            '*┋* ❌ *OWNER ONLY COMMAND*\n' +
+            '*┋*\n' +
+            '*┋* ➜ This command is only for the bot owner.\n' +
+            '*╰──────────────●●►*\n\n' +
+            FOOTER
+        );
+    }
+
     try {
         const type = (args?.[0] || '').toLowerCase();
         const action = (args?.[1] || '').toLowerCase();

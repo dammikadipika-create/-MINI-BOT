@@ -1,4 +1,3 @@
-
 const { cmd } = require('../command');
 const os = require('os');
 
@@ -51,13 +50,19 @@ async (conn, mek, m, { from, reply }) => {
 > © ᴘᴏᴡᴇʀᴇᴅ ʙʏ ɴɪᴋᴋᴀ x ᴍᴅ
 `;
 
-        await conn.sendMessage(from, {
-            text: text,
-            edit: msg.key
-        });
-
-    } catch (e) {
-        console.error("PING ERROR:", e);
-        reply("❌ Ping Error: " + e.message);
-    }
-});
+        await danuwa.sendMessage(
+    from,
+    {
+        caption: menuText.trim(),
+        contextInfo: {
+            forwardingScore: 999,
+            isForwarded: true,
+            forwardedNewsletterMessageInfo: {
+                newsletterJid: '120363430604376029@newsletter',
+                newsletterName: 'අපේ නික්කා පැට්ටා',
+                serverMessageId: 143
+            }
+        }
+    },
+    { quoted: mek }
+);

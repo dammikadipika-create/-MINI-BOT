@@ -1,13 +1,20 @@
-const config = require('../config')
-const { cmd, commands } = require('../command')
-const prefix = config.PREFIX;
-const fs = require('fs');
-const { getBuffer, getGroupAdmins, getRandom, h2k, isUrl, Json, sleep, fetchJson } = require('../lib/functions2');
-const { writeFileSync } = require('fs');
-const path = require('path');
+const config = require('../config');
+const { cmd } = require('../command');
 
+const prefix = config.PREFIX || '.';
 
+// fetchJson helper (No functions2.js required)
+async function fetchJson(url) {
+    const response = await fetch(url);
 
+    if (!response.ok) {
+        throw new Error(`HTTP Error: ${response.status}`);
+    }
+
+    return await response.json();
+}
+
+// UPDATE GROUP DESCRIPTION
 cmd({
     pattern: "updategdesc",
     alias: ["upgdesc", "gdesc"],
@@ -15,22 +22,22 @@ cmd({
     desc: "Change the group description.",
     category: "group",
     filename: __filename
-},           
-async (conn, mek, m, { from, isGroup, isAdmins, isBotAdmins, args, q, reply }) => {
+}, async (conn, mek, m, { from, isGroup, isAdmins, isBotAdmins, q, reply }) => {
     try {
         if (!isGroup) return reply("❌ This command can only be used in groups.");
         if (!isAdmins) return reply("❌ Only group admins can use this command.");
-        if (!isBotAdmins) return reply("❌ I need to be an admin to update the group description.");
+        if (!isBotAdmins) return reply("❌ I need to be an admin.");
         if (!q) return reply("❌ Please provide a new group description.");
 
         await conn.groupUpdateDescription(from, q);
-        reply("✅ Group description has been updated.");
+        return reply("✅ Group description has been updated.");
     } catch (e) {
-        console.error("Error updating group description:", e);
-        reply("❌ Failed to update the group description. Please try again.");
+        console.error(e);
+        return reply("❌ Failed to update group description.");
     }
 });
 
+// UPDATE GROUP NAME
 cmd({
     pattern: "updategname",
     alias: ["upgname", "gname"],
@@ -38,214 +45,218 @@ cmd({
     desc: "Change the group name.",
     category: "group",
     filename: __filename
-},           
-async (conn, mek, m, { from, isGroup, isAdmins, isBotAdmins, args, q, reply }) => {
+}, async (conn, mek, m, { from, isGroup, isAdmins, isBotAdmins, q, reply }) => {
     try {
         if (!isGroup) return reply("❌ This command can only be used in groups.");
         if (!isAdmins) return reply("❌ Only group admins can use this command.");
-        if (!isBotAdmins) return reply("❌ I need to be an admin to update the group name.");
+        if (!isBotAdmins) return reply("❌ I need to be an admin.");
         if (!q) return reply("❌ Please provide a new group name.");
 
         await conn.groupUpdateSubject(from, q);
-        reply(`✅ Group name has been updated to: *${q}*`);
+        return reply(`✅ Group name updated to: *${q}*`);
     } catch (e) {
-        console.error("Error updating group name:", e);
-        reply("❌ Failed to update the group name. Please try again.");
+        console.error(e);
+        return reply("❌ Failed to update group name.");
     }
 });
 
-
+// GROUP INFO
 cmd({
     pattern: "ginfo",
     react: "🥏",
     alias: ["groupinfo"],
-    desc: "Get group informations.",
+    desc: "Get group information.",
     category: "group",
     use: '.ginfo',
     filename: __filename
-},
-async(conn, mek, m,{from, l, quoted, body, isCmd, command, args, q, isGroup, sender, senderNumber, botNumber2, botNumber, pushname, isMe, isOwner, groupMetadata, groupName, participants, groupAdmins, isBotAdmins, isCreator ,isDev, isAdmins, reply}) => {
-try{
-const msr = (await fetchJson('https://raw.githubusercontent.com/JawadTech3/KHAN-DATA/refs/heads/main/MSG/mreply.json')).replyMsg
+}, async (conn, mek, m, { from, isGroup, isAdmins, isDev, participants, reply }) => {
+    try {
+        const data = await fetchJson(
+            'https://raw.githubusercontent.com/JawadTech3/KHAN-DATA/refs/heads/main/MSG/mreply.json'
+        );
 
-if (!isGroup) return reply(msr.only_gp)
-if (!isAdmins) { if (!isDev) return reply(msr.you_adm),{quoted:mek }} 
-if (!isBotAdmins) return reply(msr.give_adm)
-const ppUrls = [
-        'https://i.ibb.co/KhYC4FY/1221bc0bdd2354b42b293317ff2adbcf-icon.png',
-        'https://i.ibb.co/KhYC4FY/1221bc0bdd2354b42b293317ff2adbcf-icon.png',
-        'https://i.ibb.co/KhYC4FY/1221bc0bdd2354b42b293317ff2adbcf-icon.png',
-      ];
-let ppUrl = await conn.profilePictureUrl( from , 'image')
-if (!ppUrl) { ppUrl = ppUrls[Math.floor(Math.random() * ppUrls.length)];}
-const metadata = await conn.groupMetadata(from)
-const groupAdmins = participants.filter(p => p.admin);
-const listAdmin = groupAdmins.map((v, i) => `${i + 1}. @${v.id.split('@')[0]}`).join('\n');
-const owner = metadata.owner
+        const msr = data.replyMsg;
 
-const gdata = `*「 Group Information 」*\n
-\t*${metadata.subject}*
+        if (!isGroup) return reply(msr.only_gp);
+        if (!isAdmins && !isDev) return reply(msr.you_adm);
 
-*Group Jid* - ${metadata.id}
-*Participant Count* - ${metadata.size}
-*Group Creator* - ${owner.split('@')[0]}
-*Group Description* - ${metadata.desc?.toString() || 'undefined'}\n
-*Group Admins* - \n${listAdmin}\n`
+        const metadata = await conn.groupMetadata(from);
 
-await conn.sendMessage(from,{image:{url: ppUrl },caption: gdata },{quoted:mek })
-} catch (e) {
-await conn.sendMessage(from, { react: { text: '❌', key: mek.key } })
-console.log(e)
-reply(`❌ *Error Accurated !!*\n\n${e}`)
-}
-} )
+        let ppUrl;
+        try {
+            ppUrl = await conn.profilePictureUrl(from, 'image');
+        } catch {
+            ppUrl = 'https://i.ibb.co/KhYC4FY/1221bc0bdd2354b42b293317ff2adbcf-icon.png';
+        }
 
+        const adminsList = (metadata.participants || participants || [])
+            .filter(p => p.admin)
+            .map((v, i) => `${i + 1}. @${v.id.split('@')[0]}`)
+            .join('\n');
 
+        const owner = metadata.owner
+            ? metadata.owner.split('@')[0]
+            : 'Unknown';
+
+        const gdata = `*「 Group Information 」*
+
+*${metadata.subject}*
+
+*Group JID:* ${metadata.id}
+*Participant Count:* ${metadata.size}
+*Group Creator:* ${owner}
+*Group Description:* ${metadata.desc || 'No description'}
+
+*Group Admins:*
+${adminsList || 'No admins found'}`;
+
+        await conn.sendMessage(from, {
+            image: { url: ppUrl },
+            caption: gdata,
+            mentions: (metadata.participants || [])
+                .filter(p => p.admin)
+                .map(p => p.id)
+        }, { quoted: mek });
+
+    } catch (e) {
+        console.error("GINFO ERROR:", e);
+        reply(`❌ Group info error:\n${e.message}`);
+    }
+});
+
+// JOIN GROUP
 cmd({
     pattern: "join",
     react: "📬",
-    alias: ["joinme","f_join"],
-    desc: "To Join a Group from Invite link",
+    alias: ["joinme", "f_join"],
+    desc: "Join a group using invite link.",
     category: "group",
-    use: '.join < Group Link >',
+    use: '.join <Group Link>',
     filename: __filename
-},
-async(conn, mek, m,{from, l, quoted, body, isCmd, command, args, q, isGroup, sender, senderNumber, botNumber2, botNumber, pushname, isMe, isOwner, groupMetadata, groupName, participants, groupAdmins, isBotAdmins, isCreator ,isDev, isAdmins, reply}) => {
-try{
-const msr = (await fetchJson('https://raw.githubusercontent.com/XdTechPro/KHAN-DATA/refs/heads/main/MSG/mreply.json')).replyMsg
+}, async (conn, mek, m, { from, q, args, isCreator, isDev, isOwner, isMe, reply }) => {
+    try {
+        if (!isCreator && !isDev && !isOwner && !isMe) {
+            return reply("❌ Owner only command.");
+        }
 
-if (!isCreator && !isDev && !isOwner && !isMe) return reply(msr.own_cmd)
-if (!q) return reply("*Please write the Group Link*️ 🖇️")
- let result = args[0].split('https://chat.whatsapp.com/')[1]
- await conn.groupAcceptInvite(result)
-     await conn.sendMessage(from , { text: `✔️ *Successfully Joined*`}, { quoted: mek } )
-} catch (e) {
-await conn.sendMessage(from, { react: { text: '❌', key: mek.key } })
-console.log(e)
-reply(`❌ *Error Accurated !!*\n\n${e}`)
-}
-} )
+        if (!q) return reply("*Please provide a WhatsApp group link.*");
 
+        const match = q.match(/chat\.whatsapp\.com\/([a-zA-Z0-9]+)/);
 
-cmd({
-    pattern: "join",
-    react: "📬",
-    alias: ["joinme","f_join"],
-    desc: "To Join a Group from Invite link",
-    category: "group",
-    use: '.join < Group Link >',
-    filename: __filename
-},
-async(conn, mek, m,{from, l, quoted, body, isCmd, command, args, q, isGroup, sender, senderNumber, botNumber2, botNumber, pushname, isMe, isOwner, groupMetadata, groupName, participants, groupAdmins, isBotAdmins, isCreator ,isDev, isAdmins, reply}) => {
-try{
-const msr = (await fetchJson('https://raw.githubusercontent.com/XdTechPro/KHAN-DATA/refs/heads/main/MSG/mreply.json')).replyMsg
+        if (!match) return reply("❌ Invalid WhatsApp group link.");
 
-if (!isCreator && !isDev && !isOwner && !isMe) return reply(msr.own_cmd)
-if (!q) return reply("*Please write the Group Link*️ 🖇️")
- let result = args[0].split('https://chat.whatsapp.com/')[1]
- await conn.groupAcceptInvite(result)
-     await conn.sendMessage(from , { text: `✔️ *Successfully Joined*`}, { quoted: mek } )
-} catch (e) {
-await conn.sendMessage(from, { react: { text: '❌', key: mek.key } })
-console.log(e)
-reply(`❌ *Error Accurated !!*\n\n${e}`)
-}
-} )
+        await conn.groupAcceptInvite(match[1]);
 
+        return reply("✅ Successfully joined the group!");
 
+    } catch (e) {
+        console.error("JOIN ERROR:", e);
+        reply(`❌ Join failed:\n${e.message}`);
+    }
+});
+
+// LOCK GROUP
 cmd({
     pattern: "lockgc",
     alias: ["lock"],
     react: "🔒",
-    desc: "Lock the group (Prevents new members from joining).",
+    desc: "Lock the group.",
     category: "group",
     filename: __filename
-},           
-async (conn, mek, m, { from, isGroup, isAdmins, isBotAdmins, reply }) => {
+}, async (conn, mek, m, { from, isGroup, isAdmins, isBotAdmins, reply }) => {
     try {
-        if (!isGroup) return reply("❌ This command can only be used in groups.");
-        if (!isAdmins) return reply("❌ Only group admins can use this command.");
-        if (!isBotAdmins) return reply("❌ I need to be an admin to lock the group.");
+        if (!isGroup) return reply("❌ Group only command.");
+        if (!isAdmins) return reply("❌ Admins only.");
+        if (!isBotAdmins) return reply("❌ Bot must be admin.");
 
         await conn.groupSettingUpdate(from, "locked");
-        reply("✅ Group has been locked. New members cannot join.");
+        reply("🔒 Group has been locked.");
+
     } catch (e) {
-        console.error("Error locking group:", e);
-        reply("❌ Failed to lock the group. Please try again.");
+        console.error(e);
+        reply("❌ Failed to lock group.");
     }
 });
-    
 
+// CREATE NEW GROUP
 cmd({
-  pattern: "newgc",
-  category: "group",
-  desc: "Create a new group and add participants.",
-  filename: __filename,
-}, async (conn, mek, m, { from, isGroup, body, sender, groupMetadata, participants, reply }) => {
-  try {
-    if (!body) {
-      return reply(`Usage: !newgc group_name;number1,number2,...`);
+    pattern: "newgc",
+    category: "group",
+    desc: "Create a new group.",
+    filename: __filename
+}, async (conn, mek, m, { body, reply }) => {
+    try {
+        if (!body) {
+            return reply(`Usage: ${prefix}newgc group_name;number1,number2`);
+        }
+
+        const [groupName, numbersString] = body.split(";");
+
+        if (!groupName || !numbersString) {
+            return reply(`Usage: ${prefix}newgc group_name;number1,number2`);
+        }
+
+        const participantNumbers = numbersString
+            .split(",")
+            .map(number => number.trim())
+            .filter(number => /^\d+$/.test(number))
+            .map(number => `${number}@s.whatsapp.net`);
+
+        if (participantNumbers.length === 0) {
+            return reply("❌ Please provide valid phone numbers.");
+        }
+
+        const group = await conn.groupCreate(
+            groupName.trim(),
+            participantNumbers
+        );
+
+        const inviteLink = await conn.groupInviteCode(group.id);
+
+        await conn.sendMessage(group.id, {
+            text: "Hello everyone! 👋"
+        });
+
+        reply(`✅ Group created successfully!\n\n🔗 https://chat.whatsapp.com/${inviteLink}`);
+
+    } catch (e) {
+        console.error(e);
+        reply(`❌ Group creation failed:\n${e.message}`);
     }
-
-    const [groupName, numbersString] = body.split(";");
-    
-    if (!groupName || !numbersString) {
-      return reply(`Usage: !newgc group_name;number1,number2,...`);
-    }
-
-    const participantNumbers = numbersString.split(",").map(number => `${number.trim()}@s.whatsapp.net`);
-
-    const group = await conn.groupCreate(groupName, participantNumbers);
-    console.log('created group with id: ' + group.id); // Use group.id here
-
-    const inviteLink = await conn.groupInviteCode(group.id); // Use group.id to get the invite link
-
-    await conn.sendMessage(group.id, { text: 'hello there' });
-
-    reply(`Group created successfully with invite link: https://chat.whatsapp.com/${inviteLink}\nWelcome message sent.`);
-  } catch (e) {
-    return reply(`*An error occurred while processing your request.*\n\n_Error:_ ${e.message}`);
-  }
 });
 
-
-
-
+// REMOVE MEMBERS BY COUNTRY CODE
 cmd({
     pattern: "out",
-    alias: ["ck", "🦶", "kickcc", "removecode", "ccout"],
-    desc: "Removes all members with specific country code from the group",
+    alias: ["ck", "kickcc", "removecode", "ccout"],
+    desc: "Remove members by country code.",
     category: "admin",
     react: "❌",
     filename: __filename
-},
-async (conn, mek, m, {
-    from, q, isGroup, isBotAdmins, reply, groupMetadata, senderNumber
-}) => {
-    // Check if the command is used in a group
-    if (!isGroup) return reply("❌ This command can only be used in groups.");
-
-    // Get the bot owner's number dynamically from conn.user.id
-    const botOwner = conn.user.id.split(":")[0];
-    if (senderNumber !== botOwner) {
-        return reply("❌ Only the bot owner can use this command.");
-    }
-
-    // Check if the bot is an admin
-    if (!isBotAdmins) return reply("❌ I need to be an admin to use this command.");
-
-    if (!q) return reply("❌ Please provide a country code. Example: .out 92");
-
-    const countryCode = q.trim();
-    if (!/^\d+$/.test(countryCode)) {
-        return reply("❌ Invalid country code. Please provide only numbers (e.g., 92 for +92 numbers)");
-    }
-
+}, async (conn, mek, m, { from, q, isGroup, isBotAdmins, reply, groupMetadata, senderNumber }) => {
     try {
-        const participants = await groupMetadata.participants;
-        const targets = participants.filter(
-            participant => participant.id.startsWith(countryCode) && 
-                         !participant.admin // Don't remove admins
+        if (!isGroup) return reply("❌ Group only command.");
+
+        const botOwner = conn.user.id.split(":")[0].split("@")[0];
+
+        if (senderNumber !== botOwner) {
+            return reply("❌ Only bot owner can use this command.");
+        }
+
+        if (!isBotAdmins) return reply("❌ Bot must be admin.");
+        if (!q) return reply("❌ Provide a country code. Example: .out 94");
+
+        const countryCode = q.trim();
+
+        if (!/^\d+$/.test(countryCode)) {
+            return reply("❌ Invalid country code.");
+        }
+
+        const participants = groupMetadata.participants || [];
+
+        const targets = participants.filter(participant =>
+            participant.id.split("@")[0].startsWith(countryCode) &&
+            !participant.admin
         );
 
         if (targets.length === 0) {
@@ -253,144 +264,152 @@ async (conn, mek, m, {
         }
 
         const jids = targets.map(p => p.id);
+
         await conn.groupParticipantsUpdate(from, jids, "remove");
-        
+
         reply(`✅ Successfully removed ${targets.length} members with country code +${countryCode}`);
-    } catch (error) {
-        console.error("Out command error:", error);
-        reply("❌ Failed to remove members. Error: " + error.message);
+
+    } catch (e) {
+        console.error("OUT ERROR:", e);
+        reply(`❌ Failed:\n${e.message}`);
     }
 });
 
+// CREATE POLL
 cmd({
     pattern: "poll",
     category: "group",
-    desc: "Create a poll with a question and options in the group.",
-    filename: __filename,
-  }, async (conn, mek, m, { from, isGroup, body, sender, groupMetadata, participants, prefix, pushname, reply }) => {
+    desc: "Create a group poll.",
+    filename: __filename
+}, async (conn, mek, m, { from, body, reply }) => {
     try {
-      let [question, optionsString] = body.split(";");
-      
-      if (!question || !optionsString) {
-        return reply(`Usage: ${prefix}poll question;option1,option2,option3...`);
-      }
-  
-      let options = [];
-      for (let option of optionsString.split(",")) {
-        if (option && option.trim() !== "") {
-          options.push(option.trim());
+        if (!body) {
+            return reply(`Usage: ${prefix}poll question;option1,option2`);
         }
-      }
-  
-      if (options.length < 2) {
-        return reply("*Please provide at least two options for the poll.*");
-      }
-  
-      await conn.sendMessage(from, {
-        poll: {
-          name: question,
-          values: options,
-          selectableCount: 1,
-          toAnnouncementGroup: true,
-        }
-      }, { quoted: mek });
-    } catch (e) {
-      return reply(`*An error occurred while processing your request.*\n\n_Error:_ ${e.message}`);
-    }
-  });
 
-  cmd({
+        const [question, optionsString] = body.split(";");
+
+        if (!question || !optionsString) {
+            return reply(`Usage: ${prefix}poll question;option1,option2`);
+        }
+
+        const options = optionsString
+            .split(",")
+            .map(option => option.trim())
+            .filter(Boolean);
+
+        if (options.length < 2) {
+            return reply("❌ Please provide at least two options.");
+        }
+
+        await conn.sendMessage(from, {
+            poll: {
+                name: question.trim(),
+                values: options,
+                selectableCount: 1
+            }
+        }, { quoted: mek });
+
+    } catch (e) {
+        console.error(e);
+        reply(`❌ Poll error:\n${e.message}`);
+    }
+});
+
+// REVOKE GROUP LINK
+cmd({
     pattern: "revoke",
     react: "🖇️",
-    alias: ["revokegrouplink","resetglink","revokelink","f_revoke", "resetgclink"],
-    desc: "To Reset the group link",
+    alias: ["revokegrouplink", "resetglink", "revokelink", "f_revoke", "resetgclink"],
+    desc: "Reset group invite link.",
     category: "group",
     use: '.revoke',
     filename: __filename
-},
-async(conn, mek, m,{from, l, quoted, body, isCmd, command, args, q, isGroup, sender, senderNumber, botNumber2, botNumber, pushname, isMe, isOwner, groupMetadata, groupName, participants, groupAdmins, isBotAdmins, isCreator ,isDev, isAdmins, reply}) => {
-try{
-const msr = (await fetchJson('https://raw.githubusercontent.com/XdTechPro/KHAN-DATA/refs/heads/main/MSG/mreply.json')).replyMsg
+}, async (conn, mek, m, { from, isGroup, isAdmins, isDev, isBotAdmins, reply }) => {
+    try {
+        if (!isGroup) return reply("❌ Group only command.");
+        if (!isAdmins && !isDev) return reply("❌ Admins only.");
+        if (!isBotAdmins) return reply("❌ Bot must be admin.");
 
-if (!isGroup) return reply(msr.only_gp)
-if (!isAdmins) { if (!isDev) return reply(msr.you_adm),{quoted:mek }} 
-if (!isBotAdmins) return reply(msr.give_adm)
-await conn.groupRevokeInvite(from)
- await conn.sendMessage(from , { text: `*Group link Reseted* ⛔`}, { quoted: mek } )
-} catch (e) {
-await conn.sendMessage(from, { react: { text: '❌', key: mek.key } })
-console.log(e)
-reply(`❌ *Error Accurated !!*\n\n${e}`)
-}
-} )
+        await conn.groupRevokeInvite(from);
 
+        await conn.sendMessage(from, {
+            text: "*Group invite link has been reset!* ⛔"
+        }, { quoted: mek });
+
+    } catch (e) {
+        console.error(e);
+        reply(`❌ Revoke error:\n${e.message}`);
+    }
+});
+
+// HIDETAG
 cmd({
     pattern: "hidetag",
     react: "🔊",
-    desc: "To Tag all Members for Message",
+    desc: "Tag all group members.",
     category: "group",
-    use: '.tag Hi',
+    use: '.hidetag Hi',
     filename: __filename
-},
-async(conn, mek, m,{from, l, quoted, body, isCmd, command, mentionByTag , args, q, isGroup, sender, senderNumber, botNumber2, botNumber, pushname, isMe, isOwner, groupMetadata, groupName, participants, groupAdmins, isBotAdmins, isCreator ,isDev, isAdmins, reply}) => {
-try{
-const msr = (await fetchJson('https://raw.githubusercontent.com/XdTechPro/KHAN-DATA/refs/heads/main/MSG/mreply.json')).replyMsg
+}, async (conn, mek, m, { from, q, isGroup, isAdmins, isDev, participants, reply }) => {
+    try {
+        if (!isGroup) return reply("❌ Group only command.");
+        if (!isAdmins && !isDev) return reply("❌ Admins only.");
+        if (!q) return reply("❌ Please provide a message.");
 
-if (!isGroup) return reply(msr.only_gp)
-if (!isAdmins) { if (!isDev) return reply(msr.you_adm),{quoted:mek }} 
-if (!isBotAdmins) return reply(msr.give_adm)
-	
-		if(!q) return reply('*Please add a Message* ℹ️')
-		let teks = `${q}`
-                conn.sendMessage(from, { text: teks, mentions: participants.map(a => a.id) }, { quoted: mek })
-                
-} catch (e) {
-await conn.sendMessage(from, { react: { text: '❌', key: mek.key } })
-console.log(e)
-reply(`❌ *Error Accurated !!*\n\n${e}`)
-}
-} )
+        await conn.sendMessage(from, {
+            text: q,
+            mentions: (participants || []).map(p => p.id)
+        }, { quoted: mek });
 
+    } catch (e) {
+        console.error(e);
+        reply(`❌ Hidetag error:\n${e.message}`);
+    }
+});
+
+// UNLOCK GROUP
 cmd({
     pattern: "unlockgc",
     alias: ["unlock"],
     react: "🔓",
-    desc: "Unlock the group (Allows new members to join).",
+    desc: "Unlock the group.",
     category: "group",
     filename: __filename
-},           
-async (conn, mek, m, { from, isGroup, isAdmins, isBotAdmins, reply }) => {
+}, async (conn, mek, m, { from, isGroup, isAdmins, isBotAdmins, reply }) => {
     try {
-        if (!isGroup) return reply("❌ This command can only be used in groups.");
-        if (!isAdmins) return reply("❌ Only group admins can use this command.");
-        if (!isBotAdmins) return reply("❌ I need to be an admin to unlock the group.");
+        if (!isGroup) return reply("❌ Group only command.");
+        if (!isAdmins) return reply("❌ Admins only.");
+        if (!isBotAdmins) return reply("❌ Bot must be admin.");
 
         await conn.groupSettingUpdate(from, "unlocked");
-        reply("✅ Group has been unlocked. New members can now join.");
+        reply("🔓 Group has been unlocked.");
+
     } catch (e) {
-        console.error("Error unlocking group:", e);
-        reply("❌ Failed to unlock the group. Please try again.");
+        console.error(e);
+        reply("❌ Failed to unlock group.");
     }
 });
 
+// UNMUTE GROUP
 cmd({
     pattern: "unmute",
     alias: ["groupunmute"],
     react: "🔊",
-    desc: "Unmute the group (Everyone can send messages).",
+    desc: "Unmute the group.",
     category: "group",
     filename: __filename
-},           
-async (conn, mek, m, { from, isGroup, senderNumber, isAdmins, isBotAdmins, reply }) => {
+}, async (conn, mek, m, { from, isGroup, isAdmins, isBotAdmins, reply }) => {
     try {
-        if (!isGroup) return reply("❌ This command can only be used in groups.");
-        if (!isAdmins) return reply("❌ Only group admins can use this command.");
-        if (!isBotAdmins) return reply("❌ I need to be an admin to unmute the group.");
+        if (!isGroup) return reply("❌ Group only command.");
+        if (!isAdmins) return reply("❌ Admins only.");
+        if (!isBotAdmins) return reply("❌ Bot must be admin.");
 
         await conn.groupSettingUpdate(from, "not_announcement");
-        reply("✅ Group has been unmuted. Everyone can send messages.");
+        reply("🔊 Group has been unmuted.");
+
     } catch (e) {
-        console.error("Error unmuting group:", e);
-        reply("❌ Failed to unmute the group. Please try again.");
+        console.error(e);
+        reply("❌ Failed to unmute group.");
     }
 });

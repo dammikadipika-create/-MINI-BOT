@@ -1,40 +1,52 @@
-name: Node.js CI/CD Workflow
+name: NIKKA X MD - Private Plugins Workflow
 
 on:
   push:
     branches:
       - main
+
   pull_request:
     branches:
       - main
+
   workflow_dispatch:
 
 jobs:
   build:
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     timeout-minutes: 360
 
-    strategy:
-      matrix:
-        node-version: [20.x]
-
     steps:
-      - name: Checkout repository
+      # 1. Checkout Main Repository
+      - name: Checkout Main Repository
         uses: actions/checkout@v4
 
-      - name: Set up Node.js
+      # 2. Setup Node.js
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: ${{ matrix.node-version }}
+          node-version: 20.x
 
-      - name: Fix ASN1 dependencies
+      # 3. Checkout Private Plugins Repository
+      - name: Checkout Private Plugins
+        uses: actions/checkout@v4
+        with:
+          repository: dammikadipika-create/NIKKA---X-MD
+          token: ${{ secrets.NIKKA_PLUGINS_TOKEN }}
+          path: private-plugins
+
+      # 4. Fix ASN1 Dependencies
+      - name: Fix ASN1 Dependencies
         run: |
           npm pkg set 'overrides.@peculiar/asn1-schema=2.11.0'
           npm pkg set 'overrides.@peculiar/asn1-x509=2.11.0'
 
-      - name: Install dependencies
+      # 5. Install Dependencies
+      - name: Install Dependencies
         run: npm install --legacy-peer-deps
 
+      # 6. Install FFmpeg and ImageMagick
       - name: Install FFmpeg & ImageMagick
         run: |
           sudo rm -rf /var/lib/apt/lists/*
@@ -42,7 +54,8 @@ jobs:
           sudo apt-get update -o Acquire::Retries=5
           sudo apt-get install -y --fix-missing ffmpeg imagemagick
 
-      - name: Check required secrets
+      # 7. Check Required Secrets
+      - name: Check Required Secrets
         env:
           SESSION_ID: ${{ secrets.SESSION_ID }}
           SASA_API_KEY: ${{ secrets.SASA_API_KEY }}
@@ -54,33 +67,31 @@ jobs:
             echo "SESSION_ID is missing"
             exit 1
           fi
-          echo "SESSION_ID is set"
 
           if [ -z "$SASA_API_KEY" ]; then
             echo "SASA_API_KEY is missing"
             exit 1
           fi
-          echo "SASA_API_KEY is set"
 
           if [ -z "$SASA_DEV_API_KEY" ]; then
             echo "SASA_DEV_API_KEY is missing"
             exit 1
           fi
-          echo "SASA_DEV_API_KEY is set"
 
           if [ -z "$SASA_TTS_API_KEY" ]; then
             echo "SASA_TTS_API_KEY is missing"
             exit 1
           fi
-          echo "SASA_TTS_API_KEY is set"
 
           if [ -z "$IMGBB_API_KEY" ]; then
             echo "IMGBB_API_KEY is missing"
             exit 1
           fi
-          echo "IMGBB_API_KEY is set"
 
-      - name: Start application
+          echo "All required secrets are configured."
+
+      # 8. Start Application
+      - name: Start Application
         env:
           SESSION_ID: ${{ secrets.SESSION_ID }}
           SASA_API_KEY: ${{ secrets.SASA_API_KEY }}

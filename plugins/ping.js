@@ -1,10 +1,11 @@
+
 const { cmd } = require('../command');
 const os = require('os');
 
 cmd({
     pattern: "ping",
     alias: ["speed"],
-    desc: "Check bot response speed",
+    desc: "Check NIKKA X MD speed",
     category: "main",
     react: "⚡",
     filename: __filename
@@ -13,11 +14,6 @@ async (conn, mek, m, { from, reply }) => {
     try {
         const start = Date.now();
 
-        const msg = await conn.sendMessage(from, {
-            text: "⚡ Checking NIKKA X MD Speed..."
-        }, { quoted: mek });
-
-        const speed = Date.now() - start;
         const uptime = process.uptime();
 
         const formatTime = (seconds) => {
@@ -27,15 +23,17 @@ async (conn, mek, m, { from, reply }) => {
             return `${h}h ${min}m ${sec}s`;
         };
 
-        const memory = (process.memoryUsage().rss / 1024 / 1024).toFixed(2);
+        const memory = (
+            process.memoryUsage().rss / 1024 / 1024
+        ).toFixed(2);
 
         const newsletterName = "NIKKA X MD";
-        const newsletterJid = "YOUR_NEWSLETTER_JID";
+        const newsletterJid = "120363430604376029@newsletter";
 
         const text = `
 ╭━━〔 ⚡ NIKKA X MD 〕━━╮
 ┃
-┃  🚀 *SPEED :* ${speed} ms
+┃  🚀 *SPEED :* ${Date.now() - start} ms
 ┃  ⏱️ *UPTIME :* ${formatTime(uptime)}
 ┃  💾 *RAM :* ${memory} MB
 ┃  💻 *PLATFORM :* ${os.platform()}
@@ -47,22 +45,28 @@ async (conn, mek, m, { from, reply }) => {
 ┃
 ╰━━━━━━━━━━━━━━━━━━╯
 
-> © ᴘᴏᴡᴇʀᴇᴅ ʙʏ ɴɪᴋᴋᴀ x ᴍᴅ
+> © ᴘᴏᴡᴇʀᴇᴅ ʙʏ NIKKA X MD
 `;
 
-        await danuwa.sendMessage(
-    from,
-    {
-        caption: menuText.trim(),
-        contextInfo: {
-            forwardingScore: 999,
-            isForwarded: true,
-            forwardedNewsletterMessageInfo: {
-                newsletterJid: '120363430604376029@newsletter',
-                newsletterName: 'අපේ නික්කා පැට්ටා',
-                serverMessageId: 143
-            }
-        }
-    },
-    { quoted: mek }
-);
+        await conn.sendMessage(
+            from,
+            {
+                text: text.trim(),
+                contextInfo: {
+                    forwardingScore: 999,
+                    isForwarded: true,
+                    forwardedNewsletterMessageInfo: {
+                        newsletterJid: newsletterJid,
+                        newsletterName: newsletterName,
+                        serverMessageId: 143
+                    }
+                }
+            },
+            { quoted: mek }
+        );
+
+    } catch (e) {
+        console.error("PING ERROR:", e);
+        reply("❌ Ping Error: " + e.message);
+    }
+});

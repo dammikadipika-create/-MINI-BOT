@@ -1,3 +1,5 @@
+const config = require('../config');
+const { cmd } = require('../command');
 
 cmd({
     pattern: "tagall",
@@ -13,7 +15,6 @@ cmd({
     isGroup,
     isAdmins,
     isDev,
-    isBotAdmins,
     participants,
     reply
 }) => {
@@ -22,10 +23,6 @@ cmd({
 
         if (!isAdmins && !isDev) {
             return reply("❌ Only group admins can use this command.");
-        }
-
-        if (!isBotAdmins) {
-            return reply("❌ Bot must be an admin.");
         }
 
         const members = participants || [];
@@ -38,13 +35,19 @@ cmd({
 
         const mentions = members.map(member => member.id);
 
-        const tagText = members.map((member, index) => {
-            return `${index + 1}. @${member.id.split("@")[0]}`;
-        }).join("\n");
+        const tagText = members.map((member, index) =>
+            `${index + 1}. @${member.id.split('@')[0]}`
+        ).join('\n');
 
         await conn.sendMessage(from, {
-            text: `╭━━〔 📢 TAG ALL 〕━━╮\n\n${message}\n\n${tagText}\n\n╰━━━━━━━━━━━━━━╯`,
-            mentions: mentions
+            text: `╭━━〔 📢 TAG ALL 〕━━╮
+
+${message}
+
+${tagText}
+
+╰━━━━━━━━━━━━━━╯`,
+            mentions
         }, { quoted: mek });
 
     } catch (error) {

@@ -127,13 +127,13 @@ const settings = {
 
 function makePanel(title, lines = []) {
     return [
-        '╭━━━〔 🤍 NIKKA X MD 🤍 〕━━━╮',
+        '╭━━〔 🤍 NIKKA X MD 🤍 〕━━╮',
         '┃',
         `┃  ✨ *${title}*`,
         '┃',
         ...lines.map(line => `┃  ${line}`),
         '┃',
-        '╰━━━━━━━━━━━━━━━━━━━━━━╯',
+        '╰━━━━━━━━━━━━━━━━━━━━╯',
         '',
         FOOTER
     ].join('\n');
@@ -141,17 +141,17 @@ function makePanel(title, lines = []) {
 
 function getSettingsPanel() {
     return [
-        '╭━━━〔 🤍 NIKKA X MD 🤍 〕━━━╮',
+        '╭━━〔 🤍 NIKKA X MD 🤍 〕━━╮',
         '┃',
         '┃  ⚙️ *NIKKA X MD SETTING PANEL*',
         '┃  ✨ Owner Control Centre',
         '┃',
-        '┣━━〔 🛡️ SECURITY SETTINGS 〕━➤',
+        '┣━〔 🛡️ SECURITY SETTINGS 〕➤',
         `┃  ↳ 🔗 Anti-Link      : ${status(config.ANTI_LINK)}`,
         `┃  ↳ 👁️ Anti View Once : ${status(config.ANTI_VV)}`,
         `┃  ↳ 🗑️ Anti Delete    : ${status(config.ANTI_DELETE)}`,
         '┃',
-        '┣━━〔 🤖 AUTOMATION SETTINGS 〕━➤',
+        '┣━〔 🤖 AUTOMATION SETTINGS 〕➤',
         `┃  ↳ 📖 Status Seen    : ${status(config.AUTO_STATUS_SEEN)}`,
         `┃  ↳ 💗 Status React   : ${status(config.AUTO_STATUS_REACT)}`,
         `┃  ↳ 🟢 Always Online  : ${status(config.ALWAYS_ONLINE)}`,
@@ -160,13 +160,13 @@ function getSettingsPanel() {
         `┃  ↳ ✨ Auto React     : ${status(config.AUTO_REACT)}`,
         `┃  ↳ 📩 Auto Read      : ${status(config.READ_MESSAGE)}`,
         '┃',
-        '┣━━〔 🌐 MODE SETTINGS 〕━➤',
+        '┣━〔 🌐 MODE SETTINGS 〕➤',
         `┃  ↳ Current Mode: ${config.MODE || 'public'}`,
         '┃  ➤ .set mode public',
         '┃  ➤ .set mode private',
         '┃  ➤ .set mode groups',
         '┃',
-        '┣━━〔 🧰 CONTROL COMMANDS 〕━➤',
+        '┣━〔 🧰 CONTROL COMMANDS 〕➤',
         '┃  ➤ .set antilink on/off',
         '┃  ➤ .set antiviewonce on/off',
         '┃  ➤ .set statusseen on/off',
@@ -178,7 +178,7 @@ function getSettingsPanel() {
         '┃  ➤ .set antidelete on/off',
         '┃  ➤ .set autoread on/off',
         '┃',
-        '╰━━━━━━━━━━━━━━━━━━━━━━━➤',
+        '╰━━━━━━━━━━━━━━━━━━━━━➤',
         '',
         '💾 Settings are saved to config.env',
         FOOTER

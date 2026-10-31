@@ -1,4 +1,4 @@
-name: NIKKA X MD - Private Plugins Workflow
+name: NIKKA X MD - WhatsApp Bot Workflow
 
 on:
   push:
@@ -28,42 +28,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20.x
-
-      - name: Check Private Repository Token
-        env:
-          PLUGINS_TOKEN: ${{ secrets.NIKKA_PLUGINS_TOKEN }}
-        run: |
-          if [ -z "$PLUGINS_TOKEN" ]; then
-            echo "NIKKA_PLUGINS_TOKEN is missing!"
-            exit 1
-          fi
-          echo "Private repository token detected."
-
-      - name: Checkout Private Plugins
-        uses: actions/checkout@v4
-        with:
-          repository: dammikadipika-create/NIKKA---X-MD
-          token: ${{ secrets.NIKKA_PLUGINS_TOKEN }}
-          path: private-plugins
-          persist-credentials: false
-
-      - name: Install Private Plugins
-        run: |
-          if [ ! -d "private-plugins/plugins" ]; then
-            echo "Private plugins/plugins folder not found!"
-            exit 1
-          fi
-
-          mkdir -p plugins
-          cp -a private-plugins/plugins/. plugins/
-
-          if ! find plugins -maxdepth 1 -type f -name "*.js" | grep -q .; then
-            echo "No JavaScript plugin files found!"
-            exit 1
-          fi
-
-          echo "Private plugins copied successfully!"
-          ls -la plugins/
 
       - name: Fix ASN1 Dependencies
         run: |
@@ -95,7 +59,7 @@ jobs:
 
           echo "All required secrets are configured."
 
-      - name: Start Application
+      - name: Start NIKKA X MD
         env:
           SESSION_ID: ${{ secrets.SESSION_ID }}
           SASA_API_KEY: ${{ secrets.SASA_API_KEY }}

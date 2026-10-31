@@ -1,7 +1,7 @@
 
 <div align="center">
 
-<img src="https://files.catbox.moe/sxhk9d.jpg" width="100%" alt="NIKKA X MD Banner">
+<img src="https://files.catbox.moe/nmckrr.jpg" width="100%" alt="NIKKA X MD Banner">
 
 <br>
 

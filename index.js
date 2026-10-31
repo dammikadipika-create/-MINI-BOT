@@ -221,7 +221,7 @@ const port = process.env.PORT || 8000;
   const isOwner = ownerNumber.includes(String(senderNumber).replace(/\D/g, '')) || isMe
   const botNumber2 = await jidNormalizedUser(conn.user.id);
   const groupMetadata = isGroup ? await conn.groupMetadata(from).catch(e => {}) : ''
-  const groupName = isGroup ? groupMetadata.subject : ''
+  const groupName = isGroup ? (groupMetadata?.subject || '') : ''
   const participants = isGroup ? await groupMetadata.participants : ''
   const groupAdmins = isGroup ? await getGroupAdmins(participants) : ''
   const isBotAdmins = isGroup ? groupAdmins.includes(botNumber2) : false

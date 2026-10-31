@@ -62,7 +62,7 @@ faster and more enjoyable.
 
 ### 『 📡 OFFICIAL CHANNEL 📡 』
 
-<a href="https://whatsapp.com/">
+<a href="https://whatsapp.com/channel/0029Vb8wNY82phHHa60m1E07">
 <img src="https://img.shields.io/badge/JOIN%20OUR%20CHANNEL-25D366?style=for-the-badge&logo=whatsapp&logoColor=white">
 </a>
 
